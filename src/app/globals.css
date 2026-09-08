@@ -1,0 +1,179 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   DESIGN TOKENS
+   --------------------------------------------------------------------------
+   This is the single place the visual design lives. Every component below
+   consumes these tokens instead of hard-coded colours, sizes or fonts, so
+   re-skinning the whole site to match the Claude Design artboard is an edit
+   to THIS FILE ONLY.
+
+   To apply the real design: open
+     _ds/modernist-edd69724-c156-4c35-b8c4-3dc2244cb3f6/styles.css
+   and copy its custom-property values over the placeholders below, matching
+   them up by role (surface / text / accent / border / radius / type scale).
+
+   The values currently here are a neutral editorial placeholder, chosen to be
+   easy to overwrite — they are NOT taken from the design.
+   ========================================================================== */
+
+@theme {
+  /* --- Colour ------------------------------------------------------------
+     Derived from the logo: a near-black serif wordmark with a rust accent
+     sampled at #b73e09, presented on white.
+
+     The previous palette (cream #fcfaf6 + clay #ad4a29 + warm near-black
+     #161412) was the generic warm-craft scheme every AI-built artisan site
+     reaches for; it also was not the brand's. This is neutral off-white and
+     true near-black so the rust is the only colour on the page, which is
+     exactly how the logo behaves.
+
+     ONE accent. `accent` is the literal logo rust and clears AA on both light
+     backgrounds unmodified (5.28:1 paper, 4.84:1 alt). On the dark bands it
+     falls to 3.33:1, so those use `accent-tint` — the same hue lifted for
+     legibility, not a second colour. */
+  --color-paper: #f7f7f5; /* page background */
+  --color-surface: #fdfdfc; /* raised cards */
+  --color-surface-alt: #eeedea; /* tinted bands */
+  --color-ink: #121110; /* primary text — 17.6:1 on paper */
+  --color-ink-muted: #57534e; /* secondary text — 7.11:1 */
+  --color-ink-subtle: #6b655c; /* captions, meta — 5.38:1 paper / 4.93:1 alt */
+  --color-line: #dedcd7; /* hairline borders */
+  --color-accent: #b73e09; /* the logo rust, unaltered */
+  --color-accent-hover: #922f06;
+  --color-accent-tint: #e8794a; /* same hue, for dark bands — 6.53:1 on ink */
+  --color-accent-soft: #f7ebe4; /* accent-tinted fills */
+  --color-inverse: #121110; /* dark bands */
+  --color-inverse-ink: #f7f7f5; /* text on dark bands — 17.6:1 */
+
+  /* --- Book (loader animation surfaces) ----------------------------------
+     The book is a physical object, so its stock stays warm even though the
+     UI around it is neutral. */
+  --color-book-cover: #121110; /* front/back board */
+  --color-book-inner: #26221f; /* inside face of the board */
+  --color-book-page: #f2efe9; /* leaf stock */
+
+  /* --- Typography --------------------------------------------------------
+     Display is a serif because the brand wordmark is a serif. That is the
+     only justification that licenses one, and it is the case here: the logo
+     sets "Publish Your Book" in a high-contrast transitional serif, so a sans
+     display would fight its own logo at the top of every page. Playfair
+     Display is the closest available match in weight and stroke contrast.
+
+     Archivo carries body, UI and anything small, where the serif would cost
+     legibility. Tracking loosens as size drops: display type can afford
+     -0.03em, a 26px subhead cannot. */
+  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  --text-mega: 7.5rem; /* full-bleed statements */
+  --text-mega--line-height: 0.94;
+  --text-mega--letter-spacing: -0.03em;
+
+  --text-display: 4.75rem;
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.025em;
+
+  --text-h1: 3.5rem;
+  --text-h1--line-height: 1.04;
+  --text-h1--letter-spacing: -0.022em;
+
+  --text-h2: 2.625rem;
+  --text-h2--line-height: 1.1;
+  --text-h2--letter-spacing: -0.018em;
+
+  --text-h3: 1.5rem;
+  --text-h3--line-height: 1.25;
+  --text-h3--letter-spacing: -0.01em;
+
+  --text-lead: 1.1875rem;
+  --text-lead--line-height: 1.6;
+
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.14em;
+
+  /* --- Shape & depth ----------------------------------------------------- */
+  --radius-card: 0.75rem;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgb(26 23 21 / 0.04), 0 8px 24px rgb(26 23 21 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(26 23 21 / 0.06), 0 18px 40px rgb(26 23 21 / 0.1);
+
+  /* --- Layout ------------------------------------------------------------ */
+  --container-site: 1200px; /* content column max width */
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-wrap: balance;
+  }
+
+  /* SplitText line masking. Each line becomes its own clipping box so the
+     line can rise out from behind its own edge rather than fading in place. */
+  .tr-line {
+    overflow: hidden;
+    padding-bottom: 0.08em;
+    margin-bottom: -0.08em;
+  }
+
+  /* Aligns a full-bleed horizontal track's first card with Container's text
+     column, while the track still runs off the right edge. Must mirror
+     Container's own padding at each breakpoint (px-6, then px-10 at lg). */
+  .track-inset {
+    padding-left: max(1.5rem, calc((100vw - var(--container-site)) / 2 + 1.5rem));
+  }
+
+  @media (min-width: 1024px) {
+    .track-inset {
+      padding-left: max(2.5rem, calc((100vw - var(--container-site)) / 2 + 2.5rem));
+    }
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
