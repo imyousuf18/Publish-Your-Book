@@ -6,12 +6,47 @@
  * real copy from the Modernist design, not placeholder text.
  */
 
+/**
+ * Resolve the canonical site URL.
+ *
+ * This must never return something `new URL()` cannot parse: `metadataBase`
+ * in the root layout is evaluated while collecting page data, so a bad value
+ * fails the production build outright rather than degrading at runtime.
+ *
+ * Note the truthiness checks. `??` is wrong here: Next inlines
+ * `process.env.NEXT_PUBLIC_*` at build time and an unset variable can arrive
+ * as an empty string rather than `undefined`. Empty string is not nullish, so
+ * `??` happily passed "" through to `new URL("")` and broke the build on
+ * Vercel while working locally, where the variable is genuinely undefined.
+ */
+function resolveSiteUrl(): string {
+  const candidates = [
+    process.env.NEXT_PUBLIC_SITE_URL,
+    // Vercel exposes the deployment host with no protocol.
+    process.env.NEXT_PUBLIC_VERCEL_URL && `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`,
+    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+  ];
+
+  for (const candidate of candidates) {
+    const value = candidate?.trim();
+    if (!value) continue;
+    const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    try {
+      return new URL(withProtocol).origin;
+    } catch {
+      // Malformed value: ignore it and keep looking rather than crash.
+    }
+  }
+
+  return "http://localhost:3000";
+}
+
 export const site = {
   name: "Publish Your Book",
   tagline: "From finished manuscript to published author.",
   description:
     "Editing, design and publishing for authors who keep their rights. Austin, Texas.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: resolveSiteUrl(),
   email: "hello@publishyourbook.com",
   location: "Austin, Texas",
 } as const;
