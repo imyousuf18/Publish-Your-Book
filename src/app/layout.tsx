@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Archivo, Playfair_Display } from "next/font/google";
+import { Noto_Serif_Display, Roboto } from "next/font/google";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { BookLoader } from "@/components/loader/BookLoader";
@@ -9,23 +9,43 @@ import { site } from "@/lib/site";
 import "./globals.css";
 
 /*
- * Archivo is the Modernist design system's face. globals.css maps it onto both
- * --font-display and --font-sans, so the whole site is one family at different
- * weights and sizes — which is what the reference sites do too.
+ * Type pairing taken from creativeans.com: Roboto for everything functional
+ * (body, navigation, buttons, labels) and a high-contrast display serif for
+ * headings, set at regular weight with italic used for emphasis.
  */
-const archivo = Archivo({
+const roboto = Roboto({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-archivo",
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-roboto",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-/* The display serif, matched to the logo wordmark. */
-const playfair = Playfair_Display({
+/*
+ * STAND-IN FOR MEMOGRAM. The reference site's display face is Memogram by
+ * Letterena Studios, a commercial font: the free download is licensed for
+ * personal use only, and their webfont files cannot be reused. Noto Serif
+ * Display (SIL Open Font License) was the closest free match in width,
+ * contrast and italic when set side by side.
+ *
+ * Once a Memogram webfont licence is bought, replace this block with
+ * next/font/local pointing at the licensed files, keeping the same
+ * `variable` name so nothing else has to change:
+ *
+ *   const display = localFont({
+ *     src: [
+ *       { path: "./fonts/Memogram-Regular.woff2", weight: "400", style: "normal" },
+ *       { path: "./fonts/Memogram-Italic.woff2", weight: "400", style: "italic" },
+ *     ],
+ *     variable: "--font-display-face",
+ *     display: "swap",
+ *   });
+ */
+const display = Noto_Serif_Display({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-playfair",
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-display-face",
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -53,7 +73,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${archivo.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${roboto.variable} ${display.variable}`}>
       <body className="flex min-h-screen flex-col">
         <SmoothScroll />
         <BookLoader />

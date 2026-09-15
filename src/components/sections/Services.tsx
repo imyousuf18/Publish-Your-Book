@@ -43,6 +43,8 @@ export function Services() {
 
             <ImageSlot
               ratio="4/3"
+              src={service.image}
+              alt={service.alt}
               label={service.slotLabel}
               className="mt-8"
               sizes="(min-width: 1024px) 34vw, 86vw"

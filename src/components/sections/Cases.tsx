@@ -27,6 +27,8 @@ export function Cases() {
               <Parallax distance={-64}>
                 <ImageSlot
                   ratio="4/5"
+                  src={study.image}
+                  alt={study.alt}
                   label={study.slotLabel}
                   sizes="(min-width: 1024px) 45vw, 90vw"
                 />

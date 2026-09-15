@@ -67,6 +67,10 @@ Then:
 
 ### Why step 2 matters
 
+The same applies to the custom `rounded-*` (`card`, `pill`) and `shadow-*` (`card`, `lift`)
+tokens: unregistered, an override like `rounded-[3px]` loses to `rounded-card` on CSS order.
+Register every new custom radius or shadow token in `src/lib/utils.ts` too.
+
 `tailwind-merge` needs to know which `text-*` classes are font sizes. If it does
 not, it treats `text-lead` and `text-ink-muted` as conflicting utilities and
 silently drops the size — the class vanishes from the DOM with no error. Any new

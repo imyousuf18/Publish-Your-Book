@@ -142,8 +142,8 @@ export function Book({
                   justifyContent: "flex-end",
                 }}
               >
-                <p className="text-eyebrow font-semibold uppercase text-ink-subtle">Colophon</p>
-                <p className="mt-3 text-sm text-ink-muted">
+                <p className="text-[12px] leading-[1.4] tracking-[0.12em] font-semibold uppercase text-ink-subtle">Colophon</p>
+                <p className="mt-[12px] text-[14px] text-ink-muted">
                   Every right and every royalty stays with you.
                 </p>
               </div>
@@ -157,14 +157,14 @@ export function Book({
                 }}
               >
                 <p
-                  className="text-eyebrow font-semibold uppercase"
+                  className="text-[12px] leading-[1.4] tracking-[0.12em] font-semibold uppercase"
                   style={{ color: "var(--color-accent-tint)" }}
                 >
                   Publish Your Book
                 </p>
                 <div>
-                  <div className="h-px w-24" style={{ background: "var(--color-accent-tint)" }} />
-                  <p className="mt-6 text-sm" style={{ color: "rgb(244 238 227 / 0.6)" }}>
+                  <div className="h-px w-[96px]" style={{ background: "var(--color-accent-tint)" }} />
+                  <p className="mt-[24px] text-[14px]" style={{ color: "rgb(244 238 227 / 0.6)" }}>
                     Editing, design and publishing for authors who keep their rights.
                   </p>
                 </div>
@@ -198,19 +198,19 @@ export function Book({
                     boxShadow: "inset 14px 0 22px -18px rgb(22 20 18 / 0.4)",
                   }}
                 >
-                  <p className="text-eyebrow font-semibold uppercase text-accent">
+                  <p className="text-[12px] leading-[1.4] tracking-[0.12em] font-semibold uppercase text-accent">
                     Stage 0{i + 1}
                   </p>
-                  <p className="mt-3 font-display text-h1 leading-none text-ink">{stage.word}</p>
-                  <p className="mt-4 max-w-64 text-sm leading-relaxed text-ink-muted">
+                  <p className="mt-[12px] font-display text-[54px] leading-none text-ink">{stage.word}</p>
+                  <p className="mt-[16px] max-w-[256px] text-[14px] leading-relaxed text-ink-muted">
                     {stage.note}
                   </p>
                 </div>
                 <div style={{ ...PAGE_FACE, transform: "rotateY(180deg)" }}>
-                  <p className="text-eyebrow font-semibold uppercase text-ink-subtle">
+                  <p className="text-[12px] leading-[1.4] tracking-[0.12em] font-semibold uppercase text-ink-subtle">
                     {stage.word}
                   </p>
-                  <p className="mt-3 max-w-64 text-sm leading-relaxed text-ink-muted">
+                  <p className="mt-[12px] max-w-[256px] text-[14px] leading-relaxed text-ink-muted">
                     {stage.note}
                   </p>
                 </div>
@@ -235,19 +235,19 @@ export function Book({
                 }}
               >
                 <p
-                  className="text-eyebrow font-semibold uppercase"
+                  className="text-[12px] leading-[1.4] tracking-[0.12em] font-semibold uppercase"
                   style={{ color: "var(--color-accent-tint)" }}
                 >
                   Publish Your Book
                 </p>
                 <div>
                   <p
-                    className="font-display text-h2 leading-tight"
+                    className="font-display text-[40px] leading-tight"
                     style={{ color: "var(--color-inverse-ink)" }}
                   >
                     {hero.title}
                   </p>
-                  <div className="mt-8 h-px w-24" style={{ background: "var(--color-accent-tint)" }} />
+                  <div className="mt-[32px] h-px w-[96px]" style={{ background: "var(--color-accent-tint)" }} />
                 </div>
               </div>
               {/* Inside front cover — the colophon, seen once the book opens. */}
@@ -259,9 +259,9 @@ export function Book({
                   justifyContent: "flex-end",
                 }}
               >
-                <p className="text-eyebrow font-semibold uppercase text-accent">Colophon</p>
-                <p className="mt-3 text-h3 text-ink">Publishing services for authors.</p>
-                <p className="mt-2 text-sm text-ink-muted">Austin, Texas</p>
+                <p className="text-[12px] leading-[1.4] tracking-[0.12em] font-semibold uppercase text-accent">Colophon</p>
+                <p className="mt-[12px] text-[22px] leading-[1.3] text-ink">Publishing services for authors.</p>
+                <p className="mt-[8px] text-[14px] text-ink-muted">Austin, Texas</p>
               </div>
             </div>
           </div>

@@ -20,7 +20,7 @@ export function Process() {
         <div className="lg:sticky lg:top-28 lg:self-start">
           <Eyebrow className="text-accent-tint">How it works</Eyebrow>
           <TextReveal as="h2" className="mt-5 text-h1">
-            Six stages, nothing hidden.
+            Six stages, <span className="italic">nothing hidden.</span>
           </TextReveal>
           <p className="mt-6 max-w-sm text-lead" style={{ color: "rgb(244 238 227 / 0.7)" }}>
             You know what happens next, what it costs and who is doing it, before any work

@@ -55,7 +55,10 @@ export function Work() {
               <div data-cursor="view">
                 <ImageSlot
                   ratio="2/3"
+                  src={cover.image}
+                  alt={cover.alt}
                   label={`${cover.cat} cover`}
+                  className="rounded-[3px] shadow-lift"
                   sizes="(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw"
                 />
                 <h3 className="mt-5 text-h3">{cover.title}</h3>

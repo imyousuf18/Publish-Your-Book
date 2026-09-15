@@ -63,6 +63,11 @@ export function BookLoader() {
    * the in-flight timeline and leaves the loader frozen. This owns its own
    * lifecycle. */
   useEffect(() => {
+    /* Once finished, the loader renders nothing and every ref is null. Fast
+     * Refresh re-runs effects on edit, and without this guard gsap.set(null)
+     * threw and forced a full reload. Never animate nodes that are not there. */
+    if (done || !rootRef.current || !book.current || !cover.current || !back.current) return;
+
     lockScroll();
 
     const leafNodes = leaves.current.filter(Boolean) as HTMLDivElement[];
@@ -259,7 +264,7 @@ export function BookLoader() {
       tl.kill();
       unlockScroll();
     };
-  }, [measure]);
+  }, [measure, done]);
 
   if (done) return null;
 

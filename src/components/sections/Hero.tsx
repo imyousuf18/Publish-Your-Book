@@ -18,8 +18,9 @@ export function Hero() {
           <Eyebrow>{hero.eyebrow}</Eyebrow>
         </Reveal>
 
-        <TextReveal as="h1" className="mt-8 max-w-5xl text-display text-ink lg:text-mega">
-          {hero.title}
+        <TextReveal as="h1" className="mt-8 max-w-5xl text-h1 text-ink md:text-display">
+          {hero.title.slice(0, hero.title.lastIndexOf(" "))}{" "}
+          <span className="italic">{hero.title.slice(hero.title.lastIndexOf(" ") + 1)}</span>
         </TextReveal>
 
         <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_auto] lg:items-end">

@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "ghost";
 type Size = "md" | "lg";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-pill font-sans font-medium " +
+  "inline-flex items-center justify-center gap-2 rounded-pill font-sans font-normal " +
   "transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<Variant, string> = {

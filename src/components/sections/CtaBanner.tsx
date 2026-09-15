@@ -14,7 +14,7 @@ export function CtaBanner() {
       <Container>
         <Eyebrow className="text-accent-tint">Start here</Eyebrow>
         <TextReveal as="h2" className="mt-6 max-w-5xl text-display lg:text-mega">
-          Send us the first three chapters.
+          Send us the first three <span className="italic">chapters.</span>
         </TextReveal>
         <p className="mt-8 max-w-xl text-lead" style={{ color: "rgb(244 238 227 / 0.7)" }}>
           We will read them and tell you honestly what your book needs. No cost, no

@@ -60,6 +60,15 @@ export const navLinks: NavLink[] = [
   { label: "Genres", href: "/#genres" },
 ];
 
+/** Secondary destinations, shown in the navigation capsule's "More" menu. */
+export const moreLinks: NavLink[] = [
+  { label: "About", href: "/about" },
+  { label: "Case studies", href: "/#cases" },
+  { label: "Author guide", href: "/#articles" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Contact", href: "/contact" },
+];
+
 export const footerNav: { title: string; links: NavLink[] }[] = [
   {
     title: "Services",
@@ -146,6 +155,8 @@ export const services = [
       "Author coaching",
     ],
     slotLabel: "Manuscript pages, close-up",
+    image: "/images/services/writing.webp",
+    alt: "Fountain pen resting on a handwritten page",
   },
   {
     num: "02",
@@ -153,6 +164,8 @@ export const services = [
     body: "Four levels of editing, applied to what your manuscript actually needs. You see every change and decide what stays.",
     items: ["Developmental editing", "Line editing", "Copyediting", "Proofreading"],
     slotLabel: "Marked-up proof pages",
+    image: "/images/services/editing.webp",
+    alt: "Red pen on a printed page being proofread",
   },
   {
     num: "03",
@@ -165,6 +178,8 @@ export const services = [
       "eBook conversion",
     ],
     slotLabel: "Hardcover mockup, front view",
+    image: "/images/services/design.webp",
+    alt: "Open book with its pages fanned out",
   },
   {
     num: "04",
@@ -177,6 +192,8 @@ export const services = [
       "Cover artwork",
     ],
     slotLabel: "Children’s book interior spread",
+    image: "/images/services/illustration.webp",
+    alt: "Watercolour palette, brushes and a blank sketchbook",
   },
   {
     num: "05",
@@ -189,6 +206,8 @@ export const services = [
       "Channel setup",
     ],
     slotLabel: "Printed books, stacked",
+    image: "/images/services/publishing.webp",
+    alt: "A stack of red hardcover books",
   },
   {
     num: "06",
@@ -196,6 +215,8 @@ export const services = [
     body: "Launch materials and an author presence that fit the book. No inflated promises about sales or rankings.",
     items: ["Author one-sheet", "Launch assets", "Author page and bio", "Review outreach kit"],
     slotLabel: "Launch materials flat-lay",
+    image: "/images/services/marketing.webp",
+    alt: "Laptop, notebook and phone laid out on a white desk",
   },
 ] as const;
 
@@ -319,30 +340,46 @@ export const workFilters = [
 ] as const;
 
 export const covers = [
-  { title: "The Salt Road", meta: "Fiction · Hardcover, eBook", cat: "Fiction" },
-  { title: "Long Way from Kerrville", meta: "Memoir · Paperback", cat: "Memoir" },
-  { title: "The Quiet Ledger", meta: "Business · Hardcover", cat: "Business" },
+  { title: "The Salt Road", meta: "Fiction · Hardcover, eBook", cat: "Fiction",
+    image: "/images/covers/the-salt-road.webp",
+    alt: "Cover of The Salt Road by Elena Varga" },
+  { title: "Long Way from Kerrville", meta: "Memoir · Paperback", cat: "Memoir",
+    image: "/images/covers/long-way-from-kerrville.webp",
+    alt: "Cover of Long Way from Kerrville by R. Alvarez" },
+  { title: "The Quiet Ledger", meta: "Business · Hardcover", cat: "Business",
+    image: "/images/covers/the-quiet-ledger.webp",
+    alt: "Cover of The Quiet Ledger by D. Marchetti" },
   {
     title: "Mabel and the Nine Moons",
     meta: "Children’s · Full colour",
     cat: "Children’s",
+    image: "/images/covers/mabel-and-the-nine-moons.webp",
+    alt: "Cover of Mabel and the Nine Moons by J. Okafor",
   },
   {
     title: "Ashes of the Ninth Court",
     meta: "Fantasy · Paperback, eBook",
     cat: "Fantasy and romance",
+    image: "/images/covers/ashes-of-the-ninth-court.webp",
+    alt: "Cover of Ashes of the Ninth Court by Owen Hartley",
   },
   {
     title: "Still Waters, Still Here",
     meta: "Faith · Paperback",
     cat: "Faith and inspiration",
+    image: "/images/covers/still-waters-still-here.webp",
+    alt: "Cover of Still Waters, Still Here by S. Bell",
   },
   {
     title: "Forty Weeks of Small Repairs",
     meta: "Nonfiction · Paperback",
     cat: "Nonfiction",
+    image: "/images/covers/forty-weeks-of-small-repairs.webp",
+    alt: "Cover of Forty Weeks of Small Repairs by Priya Menon",
   },
-  { title: "What the River Kept", meta: "Fiction · Hardcover", cat: "Fiction" },
+  { title: "What the River Kept", meta: "Fiction · Hardcover", cat: "Fiction",
+    image: "/images/covers/what-the-river-kept.webp",
+    alt: "Cover of What the River Kept by T. Nakamura" },
 ] as const;
 
 /* -------------------------------------------------------------------------- */
@@ -372,6 +409,8 @@ export const cases = [
     quote: "They wrote it the way my father talked. That is the part I did not expect.",
     author: "R. Alvarez, author",
     slotLabel: "Memoir cover and interior",
+    image: "/images/cases/long-way-from-kerrville.webp",
+    alt: "Long Way from Kerrville cover beside an interior page",
   },
   {
     kicker: "Case study · Children’s",
@@ -394,6 +433,8 @@ export const cases = [
     quote: "Mabel looks exactly like the drawing in my head, only better.",
     author: "J. Okafor, author",
     slotLabel: "Children’s hardcover mockup",
+    image: "/images/cases/mabel-and-the-nine-moons.webp",
+    alt: "Mabel and the Nine Moons hardcover on linen",
   },
 ] as const;
 
