@@ -5,22 +5,49 @@ import gsap from "gsap";
 import { Book, fitScale } from "@/components/book/Book";
 import { lockScroll, unlockScroll } from "@/components/motion/SmoothScroll";
 
-/* Timeline positions out of 100. The whole thing is scrubbed by scroll, so
- * these are proportions of the gesture rather than seconds.
+/* The loader advances in DISCRETE STEPS, one per scroll gesture.
  *
- *   0  ->  grow      the closed book (front cover only) comes forward
- *  22  ->  open      front cover swings left; the spread recentres
- *  36  ->  flip      the five leaves turn, overlapping into a riffle
- *  76  ->  close     the read stack shuts as one unit while the book turns
- *                   over, landing back cover up (no extra page flip)
- *  90  ->  settle    the closed book eases back down
+ * It used to be scrubbed: deltas accumulated into a target and the timeline
+ * eased toward it. That is lovely on a mouse wheel and unusable everywhere
+ * else — one trackpad flick with inertia dumps thousands of pixels and skips
+ * the whole book, while a cautious two-finger nudge barely moves it. Both
+ * complaints ("scrolls too much", "doesn't scroll properly") are the same bug.
+ *
+ * So: the timeline carries labelled stops, a gesture moves exactly one stop,
+ * and every event inside that gesture's inertia burst is swallowed. Wheel,
+ * touch and keyboard all go through the same one-step function, so a phone
+ * behaves identically to a desktop.
+ *
+ * The steps are:
+ *   0  closed book at rest
+ *   1  grown and opened
+ *   2..6  one leaf turned per step (five leaves, no overlap — an overlapping
+ *         riffle cannot be stepped through one page at a time)
+ *   7  closed, turned over, settled  -> loader exits
  */
-const T = { growEnd: 22, openEnd: 36, flipEnd: 76, closeEnd: 90, settleEnd: 100 };
 
-/** Scroll distance, in px, that plays the whole animation once. */
-const SCROLL_SPAN = 1600;
+/** Seconds each phase occupies on the timeline. Stops are derived from these. */
+const D = { grow: 1.1, open: 0.9, leaf: 0.9, close: 1.2, settle: 0.8 };
+
+/** How long one step takes to play out, in seconds. */
+const STEP_DUR = 0.85;
+
+/** Quiet time, in ms, before new wheel events count as a fresh gesture.
+ *  Trackpad inertia keeps firing for a while after the fingers lift; anything
+ *  inside this window belongs to the gesture already served. */
+const GESTURE_GAP = 220;
+
+/** Minimum finger travel, in px, that counts as one swipe. */
+const SWIPE_PX = 36;
 
 const REST = { scale: 0.46, rotY: -28, rotX: 12, rotZ: -2 };
+
+/* Resting size on narrow screens. The spread is fitted to the viewport width,
+ * and a closed book is only half a spread, so at 0.46 it rested ~80px wide on
+ * a 390px phone: a speck in the middle of a dark screen. Phones rest it larger;
+ * it still grows to the full-width open spread (OPEN.scale) from there. */
+const REST_SCALE_NARROW = 0.78;
+const restScale = () => (window.innerWidth < 640 ? REST_SCALE_NARROW : REST.scale);
 const OPEN = { scale: 1, rotY: -6, rotX: 6, rotZ: 0 };
 
 /* A closed book occupies only the right half of the spread box, so it needs a
@@ -42,6 +69,7 @@ export function BookLoader() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   const hintRef = useRef<HTMLParagraphElement | null>(null);
+  const skipRef = useRef<HTMLButtonElement | null>(null);
   const fit = useRef<HTMLDivElement | null>(null);
   const book = useRef<HTMLDivElement | null>(null);
   const spread = useRef<HTMLDivElement | null>(null);
@@ -93,7 +121,7 @@ export function BookLoader() {
     window.addEventListener("resize", measure);
 
     gsap.set(book.current, {
-      scale: REST.scale,
+      scale: restScale(),
       rotateY: REST.rotY,
       rotateX: REST.rotX,
       rotateZ: REST.rotZ,
@@ -102,10 +130,16 @@ export function BookLoader() {
     gsap.set([cover.current, back.current, ...leafNodes], { rotateY: 0 });
     gsap.to(fit.current, { opacity: 1, duration: 0.45, ease: "power2.out" });
 
-    // Paused: scroll drives it, nothing plays on its own.
+    /* Paused, and every tween eased "none": the step tween below supplies the
+     * easing, so a phase does not get eased twice. */
     const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
 
-    // 1. Grow — a closed book, front cover only, coming forward.
+    /** Timeline times, in seconds, that a gesture can come to rest on. */
+    const stopTimes: number[] = [0];
+    let t = 0;
+
+    // 1. Grow and open, as one step — a closed book comes forward, then the
+    //    front cover swings left and the spread recentres.
     tl.to(
       book.current,
       {
@@ -113,34 +147,27 @@ export function BookLoader() {
         rotateY: OPEN.rotY,
         rotateX: OPEN.rotX,
         rotateZ: OPEN.rotZ,
-        duration: T.growEnd,
-        ease: "power2.inOut",
+        duration: D.grow,
       },
-      0,
+      t,
     );
-
-    // 2. Front cover swings open; the spread recentres as it does.
-    tl.to(
-      cover.current,
-      { rotateY: -180, duration: T.openEnd - T.growEnd, ease: "power1.inOut" },
-      T.growEnd,
-    ).to(
+    t += D.grow;
+    tl.to(cover.current, { rotateY: -180, duration: D.open }, t).to(
       spread.current,
-      { xPercent: OPEN_CENTRE, duration: T.openEnd - T.growEnd, ease: "power1.inOut" },
-      T.growEnd,
+      { xPercent: OPEN_CENTRE, duration: D.open },
+      t,
     );
+    t += D.open;
+    stopTimes.push(t);
 
-    /* 3. Leaves turn in sequence, overlapping so it reads as a riffle rather
-     * than five separate flips. */
-    const flipDur = 16;
-    const stagger =
-      leafNodes.length > 1 ? (T.flipEnd - T.openEnd - flipDur) / (leafNodes.length - 1) : 0;
-    leafNodes.forEach((leaf, i) => {
-      tl.to(
-        leaf,
-        { rotateY: -180, duration: flipDur, ease: "power1.inOut" },
-        T.openEnd + i * stagger,
-      );
+    /* 2. Leaves turn one at a time, back to back. The old build overlapped
+     * them into a riffle, which looked good scrubbed but cannot be stepped:
+     * stopping "after page two" would leave pages three to five hanging
+     * half-turned. Sequential turns are what make one-page-per-gesture true. */
+    leafNodes.forEach((leaf) => {
+      tl.to(leaf, { rotateY: -180, duration: D.leaf }, t);
+      t += D.leaf;
+      stopTimes.push(t);
     });
 
     /* 4. Close.
@@ -156,25 +183,10 @@ export function BookLoader() {
      * at 0 the entire time; once the book has turned, the face pointing at the
      * viewer is that board's reverse — the back cover — with the pages tucked
      * behind it. One gesture, no extra flip, and it lands back cover up. */
-    const overlap = 8;
-    const closeStart = T.flipEnd - overlap;
-    const closeDur = T.closeEnd - closeStart;
-
-    tl.to(
-      [cover.current, ...leafNodes],
-      { rotateY: 0, duration: closeDur, ease: "power2.inOut" },
-      closeStart,
-    )
-      .to(
-        book.current,
-        { rotateY: OPEN.rotY + TURN, duration: closeDur, ease: "power2.inOut" },
-        closeStart,
-      )
-      .to(
-        spread.current,
-        { xPercent: CLOSED_MIRRORED, duration: closeDur, ease: "power2.inOut" },
-        closeStart,
-      );
+    tl.to([cover.current, ...leafNodes], { rotateY: 0, duration: D.close }, t)
+      .to(book.current, { rotateY: OPEN.rotY + TURN, duration: D.close }, t)
+      .to(spread.current, { xPercent: CLOSED_MIRRORED, duration: D.close }, t);
+    t += D.close;
 
     /* 5. The closed book settles back down to resting size, keeping the turn
      * (TURN - REST.rotY, not -REST.rotY — the latter would quietly rotate the
@@ -182,48 +194,32 @@ export function BookLoader() {
     tl.to(
       book.current,
       {
-        scale: REST.scale,
+        scale: restScale(),
         rotateY: TURN - REST.rotY,
         rotateX: REST.rotX,
         rotateZ: -REST.rotZ,
-        duration: T.settleEnd - T.closeEnd,
-        ease: "power2.inOut",
+        duration: D.settle,
       },
-      T.closeEnd,
+      t,
     );
+    t += D.settle;
+    // Close and settle read as one movement, so they share a single stop.
+    stopTimes.push(t);
 
     /* ------------------------------------------------------------------
-     * Scroll drives the timeline. The page itself cannot scroll while the
-     * loader is up, so wheel/touch deltas are accumulated into a target and
-     * eased toward — that easing is what makes it feel scrubbed rather than
-     * step-wise. Progress only ever moves forward.
+     * One gesture, one step.
      * ---------------------------------------------------------------- */
-    let target = 0;
-    let current = 0;
-    let raf = 0;
+    const total = tl.duration();
+    const stops = stopTimes.map((time) => clamp(time / total, 0, 1));
+    const last = stops.length - 1;
+
+    const head = { p: 0 };
+    let index = 0;
+    let animating = false;
+    let burst = false;
+    let burstTimer: ReturnType<typeof setTimeout> | undefined;
     let touchY = 0;
-
-    const advance = (delta: number) => {
-      target = clamp(target + delta / SCROLL_SPAN, 0, 1);
-      if (target > 0.02 && hintRef.current) {
-        gsap.to(hintRef.current, { autoAlpha: 0, duration: 0.3, overwrite: true });
-      }
-    };
-
-    const onWheel = (e: WheelEvent) => advance(e.deltaY);
-    const onTouchStart = (e: TouchEvent) => {
-      touchY = e.touches[0].clientY;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      const y = e.touches[0].clientY;
-      advance((touchY - y) * 2.2);
-      touchY = y;
-    };
-    // Keyboard: the loader must never be a dead end for anyone who cannot scroll.
-    const onKey = (e: KeyboardEvent) => {
-      if ([" ", "PageDown", "ArrowDown", "Enter"].includes(e.key)) advance(320);
-      if (["ArrowUp", "PageUp"].includes(e.key)) advance(-320);
-    };
+    let swiped = false;
 
     const exit = () => {
       if (finished) return;
@@ -231,23 +227,84 @@ export function BookLoader() {
         .timeline({ onComplete: finish })
         .to(rootRef.current, { yPercent: -100, duration: 0.9, ease: "power3.inOut" })
         .set(rootRef.current, { display: "none" });
-      cancelAnimationFrame(raf);
-      raf = 0;
     };
 
-    const tick = () => {
-      current += (target - current) * 0.12;
-      if (Math.abs(target - current) < 0.0004) current = target;
-      tl.progress(current);
-      if (barRef.current) barRef.current.style.transform = `scaleX(${current})`;
-      if (current > 0.995) {
-        tl.progress(1);
+    /** Move exactly one stop. Anything asking for more is ignored. */
+    const step = (dir: 1 | -1) => {
+      if (animating || finished) return;
+      if (index === last && dir === 1) {
         exit();
         return;
       }
-      raf = requestAnimationFrame(tick);
+      const next = clamp(index + dir, 0, last);
+      if (next === index) return;
+      index = next;
+
+      if (hintRef.current) {
+        gsap.to(hintRef.current, { autoAlpha: 0, duration: 0.3, overwrite: true });
+      }
+
+      animating = true;
+      gsap.to(head, {
+        p: stops[index],
+        duration: STEP_DUR,
+        ease: "power2.inOut",
+        overwrite: true,
+        onUpdate: () => {
+          tl.progress(head.p);
+          if (barRef.current) barRef.current.style.transform = `scaleX(${head.p})`;
+        },
+        onComplete: () => {
+          animating = false;
+          // The book is shut and settled: let it be seen, then release.
+          if (index === last) gsap.delayedCall(0.45, exit);
+        },
+      });
     };
-    raf = requestAnimationFrame(tick);
+
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) < 4) return;
+      clearTimeout(burstTimer);
+      burstTimer = setTimeout(() => {
+        burst = false;
+      }, GESTURE_GAP);
+      /* Already served this burst — or still playing the last step. Either way
+       * the event is inertia, not intent. Note `burst` is set even when the
+       * step is refused, so a long flick cannot queue up behind the animation
+       * and fire the moment it ends. */
+      const served = burst || animating;
+      burst = true;
+      if (served) return;
+      step(e.deltaY > 0 ? 1 : -1);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      touchY = e.touches[0].clientY;
+      swiped = false;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (swiped) return;
+      const dy = touchY - e.touches[0].clientY;
+      if (Math.abs(dy) < SWIPE_PX) return;
+      swiped = true; // one step per finger-down, however far the finger travels
+      step(dy > 0 ? 1 : -1);
+    };
+
+    // Keyboard: the loader must never be a dead end for anyone who cannot scroll.
+    const onKey = (e: KeyboardEvent) => {
+      if ([" ", "PageDown", "ArrowDown", "Enter"].includes(e.key)) {
+        e.preventDefault();
+        step(1);
+      }
+      if (["ArrowUp", "PageUp"].includes(e.key)) {
+        e.preventDefault();
+        step(-1);
+      }
+      if (e.key === "Escape") exit(); // always an out
+    };
+
+    const skip = skipRef.current;
+    skip?.addEventListener("click", exit);
 
     window.addEventListener("wheel", onWheel, { passive: true });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -255,7 +312,9 @@ export function BookLoader() {
     window.addEventListener("keydown", onKey);
 
     return () => {
-      cancelAnimationFrame(raf);
+      clearTimeout(burstTimer);
+      gsap.killTweensOf(head);
+      skip?.removeEventListener("click", exit);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
@@ -283,6 +342,16 @@ export function BookLoader() {
         leafRefs={leaves}
       />
 
+      {/* An intro nobody can leave is a trap. One always-available exit, in the
+          tab order, reachable by click or Escape. */}
+      <button
+        ref={skipRef}
+        type="button"
+        className="absolute right-6 top-6 inline-flex min-h-11 items-center rounded-pill border border-inverse-ink/25 px-4 text-eyebrow font-semibold uppercase text-inverse-ink/70 transition-colors duration-200 hover:border-inverse-ink hover:text-inverse-ink lg:right-12 lg:top-10"
+      >
+        Skip
+      </button>
+
       <div className="pointer-events-none absolute inset-x-0 bottom-0 p-8 lg:p-12">
         <div className="flex items-end justify-between gap-8">
           <p
@@ -295,7 +364,9 @@ export function BookLoader() {
             ref={hintRef}
             className="text-eyebrow font-semibold uppercase text-inverse-ink/70"
           >
-            Scroll to open
+            {/* Touchscreens swipe; "scroll" only makes sense with a wheel or trackpad. */}
+            <span className="pointer-coarse:hidden">Scroll to turn the page</span>
+            <span className="hidden pointer-coarse:inline">Swipe to turn</span>
           </p>
         </div>
         <div className="mt-5 h-px w-full bg-inverse-ink/15">

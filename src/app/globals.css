@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Screen-size variants that need HEIGHT as well as width.
+ *
+ * md: alone means "768px wide", which includes every phone held sideways
+ * (844×390, 932×430). Those screens are too short for layouts that pin or
+ * stick tall content: Journeys cards (~355px) stuck 96-176px down pushed their
+ * button off a 390px screen, and the pinned Services track scroll-jacked a
+ * touch phone that swipes better natively.
+ *
+ *   roomy:  wide AND tall enough to stick or pin content
+ *   pin:    roomy, and motion is welcome. Reduced-motion visitors get the
+ *           native swipe; before, they got overflow-hidden with no pin, which
+ *           clipped cards 2-6 off-screen with no way to reach them.
+ *
+ * HorizontalTrack's gsap.matchMedia string must stay identical to "pin". */
+@custom-variant roomy (@media (min-width: 768px) and (min-height: 600px));
+@custom-variant pin (@media (min-width: 768px) and (min-height: 600px) and (prefers-reduced-motion: no-preference));
+
 /* ==========================================================================
    DESIGN TOKENS
    --------------------------------------------------------------------------
@@ -32,25 +49,31 @@
      backgrounds unmodified (5.28:1 paper, 4.84:1 alt). On the dark bands it
      falls to 3.33:1, so those use `accent-tint` — the same hue lifted for
      legibility, not a second colour. */
-  --color-paper: #f7f7f5; /* page background */
-  --color-surface: #fdfdfc; /* raised cards */
-  --color-surface-alt: #eeedea; /* tinted bands */
-  --color-ink: #121110; /* primary text — 17.6:1 on paper */
-  --color-ink-muted: #57534e; /* secondary text — 7.11:1 */
-  --color-ink-subtle: #6b655c; /* captions, meta — 5.38:1 paper / 4.93:1 alt */
-  --color-line: #dedcd7; /* hairline borders */
-  --color-accent: #b73e09; /* the logo rust, unaltered */
-  --color-accent-hover: #922f06;
-  --color-accent-tint: #e8794a; /* same hue, for dark bands — 6.53:1 on ink */
-  --color-accent-soft: #f7ebe4; /* accent-tinted fills */
-  --color-inverse: #121110; /* dark bands */
-  --color-inverse-ink: #f7f7f5; /* text on dark bands — 17.6:1 */
+  --color-paper: #f9f7f3; /* eleken off-white */
+  --color-surface: #ffffff;
+  --color-surface-alt: #e6e4e0; /* eleken tinted band */
+  --color-ink: #1d1e22; /* eleken near-black — 15.6:1 on paper */
+  --color-ink-muted: #52535a;
+  /* Darkened from #6a6b72, which came out at 4.18:1 on the new lighter paper
+     and failed AA on every footer label and step caption. */
+  --color-ink-subtle: #616269;
+  --color-line: #dcd9d3;
+  --color-accent: #9e4606; /* readable orange for TEXT — 5.6:1 on paper.
+     eleken's #ff8308 is only 2.31:1 and cannot carry small text. */
+  --color-accent-hover: #833a05;
+  --color-accent-tint: #ff9d3d; /* on dark bands */
+  --color-accent-soft: #ffeedd;
+  /* eleken's orange itself: fills, buttons, the nav ring. Always paired with
+     ink text (6.74:1), never white (2.47:1). */
+  --color-accent-bright: #ff8308;
+  --color-inverse: #1d1e22;
+  --color-inverse-ink: #f9f7f3;
 
   /* --- Book (loader animation surfaces) ----------------------------------
      The book is a physical object, so its stock stays warm even though the
      UI around it is neutral. */
-  --color-book-cover: #121110; /* front/back board */
-  --color-book-inner: #26221f; /* inside face of the board */
+  --color-book-cover: #1d1e22;
+  --color-book-inner: #2a2b30;
   --color-book-page: #f2efe9; /* leaf stock */
 
   /* --- Typography --------------------------------------------------------
@@ -66,26 +89,32 @@
 
      --font-display-face is the Memogram stand-in; see layout.tsx for the
      one-block swap once a licence is bought. */
-  --font-display: var(--font-display-face), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
 
-  --text-mega: 7rem; /* full-bleed statements */
+  /* MOBILE-FIRST, FLUID. Each size is clamp(phone, fluid, desktop). The
+     desktop cap is the old fixed value, reached at ~1100-1300px, so large
+     screens look exactly as before. Previously these were fixed rem, and the
+     root floors at 16px, so a phone got the full desktop size: display was
+     80px on a 390px screen, where one long word filled three-quarters of the
+     width and headings broke mid-word or overflowed. */
+  --text-mega: clamp(3rem, 1.2rem + 7.5vw, 7rem); /* full-bleed statements */
   --text-mega--line-height: 1.05;
   --text-mega--letter-spacing: 0;
 
-  --text-display: 5rem; /* matches their hero h1 */
+  --text-display: clamp(2.5rem, 1.1rem + 5.2vw, 5rem); /* 40px phone → 5rem */
   --text-display--line-height: 1.12;
   --text-display--letter-spacing: 0;
 
-  --text-h1: 3.5rem;
+  --text-h1: clamp(2.125rem, 1.3rem + 3.2vw, 3.5rem); /* 34px phone → 3.5rem */
   --text-h1--line-height: 1.15;
   --text-h1--letter-spacing: 0;
 
-  --text-h2: 2.25rem; /* matches their secondary section heading */
+  --text-h2: clamp(1.75rem, 1.35rem + 1.5vw, 2.25rem); /* 28px phone → 2.25rem */
   --text-h2--line-height: 1.25;
   --text-h2--letter-spacing: 0;
 
-  --text-h3: 1.5rem;
+  --text-h3: clamp(1.25rem, 1.15rem + 0.45vw, 1.5rem); /* 20px phone → 1.5rem */
   --text-h3--line-height: 1.3;
   --text-h3--letter-spacing: 0;
 
@@ -97,7 +126,12 @@
   --text-eyebrow--letter-spacing: 0.025em;
 
   /* --- Shape & depth ----------------------------------------------------- */
-  --radius-card: 0.75rem;
+  /* umanodesign.studio, measured on the live site: its radii cluster at 10-16px,
+     with 16px the most common. 1.25rem landed at ~21px on our fluid root, which
+     read softer than the reference. 1rem puts us at 16-17px. */
+  --radius-card: 1rem;
+  /* Media panels, from umanodesign.studio's feature cards (21px measured). */
+  --radius-panel: 1.25rem;
   --radius-pill: 999px;
 
   --shadow-card: 0 1px 2px rgb(26 23 21 / 0.04), 0 8px 24px rgb(26 23 21 / 0.06);
@@ -180,6 +214,99 @@
 }
 
 /* ==========================================================================
+   LABEL ROLL
+   The button hover from orionix.framer.website: the label is rendered twice,
+   one copy below the other, inside a window exactly one line tall. On hover
+   the pair slides up by one line, so the second copy lands where the first
+   was and the word appears to roll over.
+
+   This is hand-written CSS rather than Tailwind utilities because
+   `group-hover:-translate-y-[1lh]` produced NO rule at all — Tailwind refuses
+   `lh` in an arbitrary translate and drops the class silently, exactly the
+   way it dropped our custom font sizes and radii before. The transform here
+   is unit-free instead: .roll__inner is exactly two lines tall, so -50% of
+   its own height is precisely one line, whatever the font or line-height.
+   ========================================================================== */
+
+.roll {
+  display: block;
+  position: relative;
+  height: 1lh;
+  overflow: clip;
+}
+
+.roll__inner {
+  display: block;
+  will-change: transform;
+  transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .roll__inner,
+.group:focus-visible .roll__inner {
+  transform: translateY(-50%);
+}
+
+/* ==========================================================================
+   JOURNEY DIALOG
+   The pop-up form opened from the "Three ways in" cards. A short rise and
+   fade on open (300ms, inside the 150-400ms UI range), and the same for the
+   backdrop. @starting-style gives it an entry state to animate from; browsers
+   without it simply open the dialog without the animation.
+   ========================================================================== */
+
+.journey-dialog[open] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 300ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.journey-dialog[open]::backdrop {
+  opacity: 1;
+  transition: opacity 300ms ease;
+}
+
+@starting-style {
+  .journey-dialog[open] {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+
+  .journey-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   FOOTER REVEAL
+   The footer is fixed on the bottom layer; the page content above it is
+   opaque, sits on a higher layer, and reserves exactly the footer's height as
+   bottom margin. Scrolling to the end slides that content up off the footer,
+   so the footer is uncovered from the bottom of the screen rather than
+   arriving as just another block. Taken from wearedirect.co.
+
+   --footer-h is measured and published by FooterReveal.tsx; the data attribute
+   it sets is what switches this on, so with JS off (or a footer taller than
+   the screen) everything stays an ordinary footer in normal flow.
+   ========================================================================== */
+
+html[data-footer-reveal="on"] #site-footer {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 0;
+}
+
+html[data-footer-reveal="on"] #page-content {
+  position: relative;
+  z-index: 1;
+  margin-bottom: var(--footer-h, 0px);
+  /* Opaque, or the footer shows through the content instead of behind it. */
+  background-color: var(--color-paper);
+}
+
+/* ==========================================================================
    NAV RING
    The navigation capsule's 1px border: a conic gradient whose start angle is
    animated, so the highlight travels round the capsule. On hover the rotation
@@ -245,6 +372,123 @@
 
 .nav-ring:hover::after {
   opacity: 1;
+}
+
+/* ==========================================================================
+   3D OBJECTS
+   Written as plain CSS, not Tailwind utilities, for the same reason as the
+   label roll: transform values Tailwind does not understand are dropped with
+   no error, and a 3D scene with one missing rule is just a broken picture.
+
+   .tilt3d      perspective root. Its two wrappers rotate: one from scroll, one
+                from the pointer (see Tilt3D.tsx). Every ancestor between the
+                perspective root and a translateZ child must be preserve-3d,
+                or the depth flattens without warning, so .stage3d is set on
+                each of them.
+
+   .book3d      a standing book built from real faces: cover, back, spine and
+                page block, sized in container units so it scales with its
+                column. Turned -26deg at rest, and squares up on hover.
+   ========================================================================== */
+
+.tilt3d {
+  perspective: 1400px;
+}
+
+.stage3d {
+  transform-style: preserve-3d;
+}
+
+.book3d {
+  --d: 7cqw;
+  container-type: inline-size;
+  position: relative;
+  perspective: 1100px;
+  padding: 0 4cqw;
+}
+
+.book3d__body {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  transform-style: preserve-3d;
+  transform: rotateY(-26deg) rotateX(3deg);
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .book3d__body,
+.book3d:focus-within .book3d__body {
+  transform: rotateY(-8deg) rotateX(0deg) translateY(-6px);
+}
+
+.book3d__face {
+  position: absolute;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.book3d__front,
+.book3d__back {
+  inset: 0;
+}
+
+.book3d__front {
+  overflow: hidden;
+  /* Solid, so the face never reads as see-through while its image loads. */
+  background: var(--color-book-cover);
+  border-radius: 2px 4px 4px 2px;
+  transform: translateZ(calc(var(--d) / 2));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+/* Gloss, and the crease where the cover hinges from the spine. */
+.book3d__front::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.28) 0, rgb(0 0 0 / 0) 5%),
+    linear-gradient(105deg, rgb(255 255 255 / 0.2) 0, rgb(255 255 255 / 0) 38%);
+  pointer-events: none;
+}
+
+.book3d__back {
+  background: var(--color-book-cover);
+  border-radius: 4px 2px 2px 4px;
+  transform: rotateY(180deg) translateZ(calc(var(--d) / 2));
+}
+
+.book3d__spine,
+.book3d__pages {
+  top: 1px;
+  bottom: 1px;
+  width: var(--d);
+  left: calc(50% - var(--d) / 2);
+}
+
+.book3d__spine {
+  background: linear-gradient(90deg, var(--color-book-cover), var(--color-book-inner));
+  transform: rotateY(-90deg) translateZ(50cqw);
+}
+
+.book3d__pages {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-book-page) 0 1px,
+    rgb(0 0 0 / 0.12) 1px 2px
+  );
+  transform: rotateY(90deg) translateZ(50cqw);
+}
+
+/* Contact shadow: a sibling of the rotating body so it stays on the ground. */
+.book3d__shadow {
+  position: absolute;
+  left: 10%;
+  right: 0;
+  bottom: -3cqw;
+  height: 6cqw;
+  background: radial-gradient(ellipse at center, rgb(0 0 0 / 0.32), rgb(0 0 0 / 0) 70%);
+  filter: blur(5px);
+  pointer-events: none;
 }
 
 /* Respect users who ask for less motion. */

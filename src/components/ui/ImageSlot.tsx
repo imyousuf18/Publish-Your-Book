@@ -12,6 +12,14 @@ type ImageSlotProps = {
   className?: string;
   priority?: boolean;
   sizes?: string;
+  /**
+   * Scale the image up slightly while the nearest `.group` ancestor is
+   * hovered. Orionix does this on every project tile: a "Thumnail Wrap" at
+   * `overflow: hidden; border-radius: 24px` holding an image that grows, so
+   * the picture moves inside a corner that stays put. The card itself never
+   * moves, which is what keeps a grid of them calm.
+   */
+  zoom?: boolean;
 };
 
 /**
@@ -27,6 +35,7 @@ export function ImageSlot({
   className,
   priority = false,
   sizes = "(min-width: 1024px) 50vw, 100vw",
+  zoom = false,
 }: ImageSlotProps) {
   return (
     <div
@@ -43,7 +52,11 @@ export function ImageSlot({
           fill
           priority={priority}
           sizes={sizes}
-          className="object-cover"
+          className={cn(
+            "object-cover",
+            zoom &&
+              "transition-transform duration-[600ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100",
+          )}
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center border border-dashed border-line">

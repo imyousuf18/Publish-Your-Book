@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { List, X } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,12 @@ export function NavCapsule({ placement, className }: NavCapsuleProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const menuId = useId();
+  // Now that every item is a real page, show the reader where they are.
+  const pathname = usePathname();
+  /* "page" for the page itself; "true" for a section the page sits inside, so
+     the Services item stays lit on every /services/... page. */
+  const currentState = (href: string) =>
+    pathname === href ? "page" : pathname.startsWith(`${href}/`) ? "true" : undefined;
 
   useEffect(() => {
     if (!open) return;
@@ -58,7 +65,8 @@ export function NavCapsule({ placement, className }: NavCapsuleProps) {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="inline-block rounded-full px-4 py-2 text-[0.833rem] font-medium tracking-[0.025em] text-inverse-ink/85 transition-colors duration-200 hover:bg-inverse-ink/10 hover:text-inverse-ink xl:px-5"
+                  aria-current={currentState(link.href)}
+                  className="inline-block rounded-full px-4 py-2 text-[0.833rem] font-medium tracking-[0.025em] text-inverse-ink/85 transition-colors duration-200 hover:bg-inverse-ink/10 hover:text-inverse-ink aria-[current=page]:bg-inverse-ink/15 aria-[current=page]:text-inverse-ink aria-[current=true]:bg-inverse-ink/15 aria-[current=true]:text-inverse-ink xl:px-5"
                 >
                   {link.label}
                 </Link>
@@ -102,8 +110,9 @@ export function NavCapsule({ placement, className }: NavCapsuleProps) {
             <li key={link.href}>
               <Link
                 href={link.href}
+                aria-current={currentState(link.href)}
                 onClick={() => setOpen(false)}
-                className="block rounded-[0.5rem] px-4 py-2.5 text-sm text-inverse-ink/80 transition-colors hover:bg-inverse-ink/10 hover:text-inverse-ink"
+                className="block rounded-[0.5rem] px-4 py-2.5 text-sm text-inverse-ink/80 transition-colors hover:bg-inverse-ink/10 hover:text-inverse-ink aria-[current=page]:text-accent-tint"
               >
                 {link.label}
               </Link>

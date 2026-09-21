@@ -24,7 +24,6 @@ export function Genres() {
         {genres.map((genre, i) => (
           <article
             key={genre.label}
-            data-cursor="read"
             className="flex w-[78vw] shrink-0 flex-col border-t-2 border-ink pt-6 sm:w-[46vw] lg:w-[26vw]"
           >
             <span className="text-eyebrow font-semibold uppercase text-accent tabular-nums">

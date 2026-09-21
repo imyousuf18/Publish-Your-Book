@@ -29,14 +29,13 @@ export function Hero() {
           </TextReveal>
 
           <Reveal delay={220} className="flex flex-wrap gap-3">
-            <ButtonLink href={hero.primaryCta.href} size="lg" data-cursor="link">
+            <ButtonLink href={hero.primaryCta.href} size="lg">
               {hero.primaryCta.label}
             </ButtonLink>
             <ButtonLink
               href={hero.secondaryCta.href}
               variant="secondary"
               size="lg"
-              data-cursor="link"
             >
               {hero.secondaryCta.label}
             </ButtonLink>

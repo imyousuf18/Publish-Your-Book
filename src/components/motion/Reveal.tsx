@@ -10,6 +10,8 @@ type RevealProps = {
   distance?: number;
   as?: "div" | "section" | "li" | "article";
   className?: string;
+  /** Passed through, so a revealed block can still be a link target. */
+  id?: string;
   children: React.ReactNode;
 };
 
@@ -26,6 +28,7 @@ export function Reveal({
   distance = 24,
   as: Tag = "div",
   className,
+  id,
   children,
 }: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
@@ -72,6 +75,7 @@ export function Reveal({
 
   return (
     <Tag
+      id={id}
       ref={ref as React.Ref<never>}
       className={cn("will-change-[opacity,transform]", className)}
       style={{

@@ -17,7 +17,7 @@ const fontSizes = ["mega", "display", "h1", "h2", "h3", "lead", "eyebrow"];
  * survive the merge and CSS source order silently decides the winner, which
  * is how the book covers kept 12px corners despite asking for 3px.
  */
-const radii = ["card", "pill"];
+const radii = ["card", "panel", "pill"];
 const shadows = ["card", "lift"];
 
 const twMerge = extendTailwindMerge({

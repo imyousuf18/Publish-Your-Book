@@ -1,7 +1,7 @@
-import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/motion/Reveal";
 import { TextReveal } from "@/components/motion/TextReveal";
+import { JourneyDialog, JourneyTrigger } from "@/components/forms/JourneyDialog";
 import { journeys } from "@/lib/site";
 
 /**
@@ -30,7 +30,8 @@ export function Journeys() {
         {journeys.map((journey, i) => (
           <div
             key={journey.num}
-            className="md:sticky"
+            // roomy, not md: a sideways phone is wide but only ~390px tall.
+            className="roomy:sticky"
             style={{ top: `calc(6rem + ${i * 2.5}rem)`, zIndex: 10 + i }}
           >
             <div
@@ -57,14 +58,10 @@ export function Journeys() {
                   {journey.body}
                 </p>
               </div>
-              <ButtonLink
-                href="/contact"
-                variant={i === 1 ? "primary" : "secondary"}
-                size="lg"
-                data-cursor="link"
-              >
-                Start here
-              </ButtonLink>
+              {/* Opens this journey's own questions in the pop-up form. */}
+              <JourneyTrigger journey={journey.id} variant={i === 1 ? "primary" : "secondary"}>
+                {journey.cta}
+              </JourneyTrigger>
             </div>
           </div>
         ))}
@@ -73,10 +70,14 @@ export function Journeys() {
       <Container className="mt-16">
         <Reveal>
           <p className="text-sm text-ink-subtle">
-            Not sure which one? Send the first three chapters and we will tell you.
+            Not sure which one? Tell us where the book is now, in a sentence, and we will
+            point you to the right start.
           </p>
         </Reveal>
       </Container>
+
+      {/* Mounted once; every card above opens it with its own question set. */}
+      <JourneyDialog />
     </section>
   );
 }

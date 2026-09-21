@@ -26,14 +26,13 @@ export function GenresList() {
           {genres.map((genre, i) => (
             <Reveal as="li" key={genre.label} delay={(i % 3) * 60}>
               <div
-                data-cursor="read"
                 className="group border-t border-line py-6 transition-colors hover:border-accent"
               >
                 <div className="flex items-baseline gap-4">
                   <span className="font-sans text-xs tabular-nums text-ink-subtle">
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <h3 className="text-h3 transition-colors group-hover:text-accent">
+                  <h3 id={genre.id} className="scroll-mt-32 text-h3 transition-colors group-hover:text-accent">
                     {genre.label}
                   </h3>
                 </div>

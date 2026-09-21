@@ -21,8 +21,8 @@ export function ArticlesList() {
             Read this before you spend anything.
           </TextReveal>
           <Link
-            href="/#articles"
-            className="text-sm font-medium text-accent underline underline-offset-4"
+            href="/author-guide"
+            className="inline-flex min-h-11 items-center text-sm font-medium text-accent underline underline-offset-4"
           >
             All articles
           </Link>
@@ -33,7 +33,6 @@ export function ArticlesList() {
             <Reveal as="li" key={article.title} delay={i * 80}>
               <Link
                 href="/#articles"
-                data-cursor="read"
                 className="group grid gap-4 border-t border-line py-8 transition-colors hover:border-accent lg:grid-cols-[auto_1fr_auto] lg:items-baseline lg:gap-12"
               >
                 <span className="font-sans text-xs tabular-nums text-ink-subtle">

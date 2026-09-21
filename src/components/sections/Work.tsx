@@ -35,9 +35,8 @@ export function Work() {
                 type="button"
                 onClick={() => setFilter(f)}
                 aria-pressed={active}
-                data-cursor="link"
                 className={cn(
-                  "rounded-pill border-2 border-ink px-4 py-2 text-sm font-medium transition-colors",
+                  "inline-flex min-h-11 items-center rounded-pill border-2 border-ink px-4 text-sm font-medium transition-colors",
                   active
                     ? "bg-ink text-inverse-ink"
                     : "bg-transparent text-ink hover:bg-ink/5",
@@ -52,7 +51,7 @@ export function Work() {
         <ul className="mt-14 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
           {shown.map((cover, i) => (
             <Reveal as="li" key={cover.title} delay={(i % 4) * 70}>
-              <div data-cursor="view">
+              <div className="group">
                 <ImageSlot
                   ratio="2/3"
                   src={cover.image}
@@ -60,8 +59,11 @@ export function Work() {
                   label={`${cover.cat} cover`}
                   className="rounded-[3px] shadow-lift"
                   sizes="(min-width: 1024px) 22vw, (min-width: 640px) 45vw, 90vw"
+                  zoom
                 />
-                <h3 className="mt-5 text-h3">{cover.title}</h3>
+                <h3 className="mt-5 text-h3 transition-colors duration-200 group-hover:text-accent">
+                  {cover.title}
+                </h3>
                 <p className="mt-1 text-sm text-ink-muted">{cover.meta}</p>
               </div>
             </Reveal>

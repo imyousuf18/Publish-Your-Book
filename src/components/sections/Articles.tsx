@@ -16,7 +16,6 @@ export function Articles() {
           </div>
           <Link
             href="/#articles"
-            data-cursor="link"
             className="text-sm font-medium text-accent underline underline-offset-4"
           >
             All articles
@@ -32,7 +31,6 @@ export function Articles() {
               className="border-b-2 border-ink lg:border-b-0 lg:border-r-2 lg:last:border-r-0"
             >
               <article
-                data-cursor="read"
                 className="flex h-full flex-col items-start p-8 lg:p-10"
               >
                 <p className="text-eyebrow font-semibold uppercase text-accent">

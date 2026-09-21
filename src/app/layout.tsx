@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Noto_Serif_Display, Roboto } from "next/font/google";
+import { Playfair_Display, Roboto } from "next/font/google";
+import { FooterReveal } from "@/components/layout/FooterReveal";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { BookLoader } from "@/components/loader/BookLoader";
-import { Cursor } from "@/components/motion/Cursor";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
+import { organizationSchema } from "@/lib/schema";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -20,30 +21,13 @@ const roboto = Roboto({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-/*
- * STAND-IN FOR MEMOGRAM. The reference site's display face is Memogram by
- * Letterena Studios, a commercial font: the free download is licensed for
- * personal use only, and their webfont files cannot be reused. Noto Serif
- * Display (SIL Open Font License) was the closest free match in width,
- * contrast and italic when set side by side.
- *
- * Once a Memogram webfont licence is bought, replace this block with
- * next/font/local pointing at the licensed files, keeping the same
- * `variable` name so nothing else has to change:
- *
- *   const display = localFont({
- *     src: [
- *       { path: "./fonts/Memogram-Regular.woff2", weight: "400", style: "normal" },
- *       { path: "./fonts/Memogram-Italic.woff2", weight: "400", style: "italic" },
- *     ],
- *     variable: "--font-display-face",
- *     display: "swap",
- *   });
- */
-const display = Noto_Serif_Display({
+/* Display serif: Playfair Display, matched to the serif logo wordmark.
+ * Italic is loaded because emphasis inside headings is set in italic of the
+ * same face. */
+const display = Playfair_Display({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-display-face",
+  variable: "--font-playfair",
   weight: ["400", "500"],
   style: ["normal", "italic"],
 });
@@ -75,20 +59,30 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${roboto.variable} ${display.variable}`}>
       <body className="flex min-h-screen flex-col">
+        {/* Structured data only — no visual output. Lets search engines read
+            the business as a ProfessionalService rather than guessing from copy. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema()) }}
+        />
         <SmoothScroll />
         <BookLoader />
-        <Cursor />
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-card focus:bg-accent focus:px-4 focus:py-2 focus:text-white"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-card focus:bg-accent focus:px-4 focus:py-3 focus:text-white"
         >
           Skip to content
         </a>
         <SiteHeader />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
+        {/* Everything that slides up off the footer. The header is fixed and
+            the loader is an overlay, so only this needs to move. */}
+        <div id="page-content" className="flex flex-1 flex-col">
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+        </div>
         <SiteFooter />
+        <FooterReveal />
       </body>
     </html>
   );
