@@ -16,6 +16,10 @@
  * HorizontalTrack's gsap.matchMedia string must stay identical to "pin". */
 @custom-variant roomy (@media (min-width: 768px) and (min-height: 600px));
 @custom-variant pin (@media (min-width: 768px) and (min-height: 600px) and (prefers-reduced-motion: no-preference));
+/* Short screens, for the hero, which must fit in one screen at every size.
+ * snug: laptops at 720-768 and small phones; short: phones held sideways. */
+@custom-variant snug (@media (max-height: 780px));
+@custom-variant short (@media (max-height: 540px));
 
 /* ==========================================================================
    DESIGN TOKENS
@@ -63,6 +67,10 @@
   --color-accent-hover: #833a05;
   --color-accent-tint: #ff9d3d; /* on dark bands */
   --color-accent-soft: #ffeedd;
+  /* Text selection, as every editor draws it: the hero headline's "selected"
+     state reads as editable because it looks like this. Ink stays legible on
+     it (13:1). */
+  --color-selection: rgb(56 132 255 / 0.22);
   /* eleken's orange itself: fills, buttons, the nav ring. Always paired with
      ink text (6.74:1), never white (2.47:1). */
   --color-accent-bright: #ff8308;
@@ -404,7 +412,17 @@ html[data-footer-reveal="on"] #page-content {
   container-type: inline-size;
   position: relative;
   perspective: 1100px;
-  padding: 0 4cqw;
+  /* NO padding in cqw here. An element is a query container for its
+     DESCENDANTS, never for itself, so `4cqw` on this rule resolved against the
+     viewport instead: 57.6px a side on a 1440px screen, 72.8px on an 1820px
+     one. It ate 115-146px out of a ~250px book, and got worse the wider the
+     screen — which is why the covers shrank as the display grew. The breathing
+     room now lives on the body below, where cqw means what it says. */
+}
+
+/* Inset for the turned book, as a share of the book's own width. */
+.book3d__body {
+  margin-inline: 4cqw;
 }
 
 .book3d__body {
@@ -467,7 +485,8 @@ html[data-footer-reveal="on"] #page-content {
 
 .book3d__spine {
   background: linear-gradient(90deg, var(--color-book-cover), var(--color-book-inner));
-  transform: rotateY(-90deg) translateZ(50cqw);
+  /* 46, not 50: the body is inset by 4cqw a side, so half its width is 46cqw. */
+  transform: rotateY(-90deg) translateZ(46cqw);
 }
 
 .book3d__pages {
@@ -476,7 +495,7 @@ html[data-footer-reveal="on"] #page-content {
     var(--color-book-page) 0 1px,
     rgb(0 0 0 / 0.12) 1px 2px
   );
-  transform: rotateY(90deg) translateZ(50cqw);
+  transform: rotateY(90deg) translateZ(46cqw);
 }
 
 /* Contact shadow: a sibling of the rotating body so it stays on the ground. */
@@ -504,4 +523,111 @@ html[data-footer-reveal="on"] #page-content {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ==========================================================================
+   Homepage intro — components/loader/BookLoader.tsx, lib/intro.ts
+   ========================================================================== */
+
+/* Off (already seen, reduced motion, no WebGL2): hidden before first paint by
+   the class the inline guard sets, so it never flashes. */
+.intro-off [data-intro] {
+  display: none;
+}
+
+/* While it is up, the page under it must not scroll — including in the moment
+   before JavaScript arrives and Lenis can be stopped. */
+html:not(.intro-off):has([data-intro]) {
+  overflow: hidden;
+}
+
+
+/* ==========================================================================
+   Hero headline editor — components/hero/EditorHeadline.tsx
+   ========================================================================== */
+
+/* The "selected text" highlight: sweeps across the headline, line by line.
+   Only 84% of the glyph box tall, centred: Playfair's box (~1.33em) is taller
+   than the headline's line height (1.12em), and full-height highlights on
+   neighbouring lines overlapped into a darker band. */
+.hero-select {
+  background-image: linear-gradient(var(--color-selection), var(--color-selection));
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 0% 84%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: background-size 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-select[data-selected] {
+  background-size: 100% 84%;
+}
+
+/* The text cursor at the end of the headline. Zero-width, so it never moves
+   a word; the bar hangs off it. Ends each cycle visible, so reduced motion
+   (which stops animations at their end) leaves a steady cursor, not none. */
+@keyframes hero-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  99% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.hero-caret {
+  display: inline-block;
+  position: relative;
+  width: 0;
+  height: 0.9em;
+  vertical-align: -0.1em;
+}
+.hero-caret::after {
+  content: "";
+  position: absolute;
+  left: 0.06em;
+  top: 0;
+  bottom: 0;
+  width: max(2px, 0.045em);
+  background: currentColor;
+  animation: hero-caret 1.06s infinite;
+}
+
+/* The toolbar's invitation: a soft ring that breathes until the first click.
+   Ends each cycle at full strength, so reduced motion shows it steady. */
+@keyframes hero-invite {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgb(29 30 34 / 0.06),
+      0 8px 24px rgb(29 30 34 / 0.08),
+      0 0 0 4px rgb(255 131 8 / 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgb(29 30 34 / 0.06),
+      0 8px 24px rgb(29 30 34 / 0.08),
+      0 0 0 9px rgb(255 131 8 / 0);
+  }
+}
+.hero-invite {
+  animation: hero-invite 1.8s ease-in-out infinite;
+}
+
+/* The demo pointer: glides by transition; its position is set from script. */
+.hero-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 700ms cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 250ms ease;
+  filter: drop-shadow(0 2px 3px rgb(29 30 34 / 0.3));
 }

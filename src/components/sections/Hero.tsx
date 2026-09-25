@@ -1,61 +1,86 @@
 import { ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Parallax } from "@/components/motion/Parallax";
 import { Reveal } from "@/components/motion/Reveal";
-import { TextReveal } from "@/components/motion/TextReveal";
-import { hero, stages } from "@/lib/site";
+import { EditorHeadline } from "@/components/hero/EditorHeadline";
+import { FloatingCovers } from "@/components/hero/FloatingCovers";
+import { ParallaxFrame } from "@/components/hero/ParallaxFrame";
+import { RippleField } from "@/components/hero/RippleField";
+import { StudioClock } from "@/components/hero/StudioClock";
+import { hero, site } from "@/lib/site";
 
 /**
- * The book itself now lives in the loader, so the hero is type-led: a very
- * large statement, revealed line by line, over a slowly drifting stage rail.
+ * The hero, built on orionix.framer.website's structure:
+ *
+ *   orionix                            ours
+ *   ---------------------------------  ------------------------------------
+ *   centred serif headline             our headline, centred
+ *   a formatting bar that restyles     the same: level, bold, italic,
+ *   the headline                       underline and ink, set live
+ *   one big floating object            our covers, floating in the margins
+ *   rippling on a WebGL shader         a faint typeset spread behind it all,
+ *                                      rippling gently under the pointer and
+ *                                      on click (RippleField); covers stay still
+ *   soft ground in an inset frame      a paper frame inset 8px from the edge
+ *   timezone + email in the corners    Chicago time and email; the pitch at
+ *                                      the foot, centred
+ *
+ * It fits one screen at every size: the frame is 100svh (less its 8px inset)
+ * and the content is trimmed on short screens rather than letting the frame
+ * grow — see the snug / short variants in globals.css.
+ *
+ * The previous hero is HeroShelf.tsx — import it as Hero in app/page.tsx to go
+ * back.
  */
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-line bg-paper pt-32 pb-24 lg:pt-44 lg:pb-32">
-      <Container>
-        <Reveal>
-          <Eyebrow>{hero.eyebrow}</Eyebrow>
-        </Reveal>
+    <section className="bg-paper p-2">
+      <ParallaxFrame className="relative flex min-h-[calc(100svh-1rem)] flex-col overflow-hidden rounded-[1.75rem] bg-surface-alt/70">
+        <RippleField />
+        <FloatingCovers layout="scatter" />
 
-        <TextReveal as="h1" className="mt-8 max-w-5xl text-h1 text-ink md:text-display">
-          {hero.title.slice(0, hero.title.lastIndexOf(" "))}{" "}
-          <span className="italic">{hero.title.slice(hero.title.lastIndexOf(" ") + 1)}</span>
-        </TextReveal>
+        {/* z-20, above the foot row's z-10: the toolbar's menus open downward
+         * and must pass over the foot on short screens, not under it. */}
+        <Container className="relative z-20 flex flex-1 flex-col items-center justify-center pb-4 pt-[4.5rem] text-center lg:pt-28 short:pb-2 short:pt-16">
+          <Reveal className="short:hidden">
+            <Eyebrow>{hero.eyebrow}</Eyebrow>
+          </Reveal>
 
-        <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_auto] lg:items-end">
-          <TextReveal as="p" className="max-w-xl text-lead text-ink-muted" delay={120}>
-            {hero.body}
-          </TextReveal>
+          <div className="mt-4 w-full md:mt-6 short:mt-0">
+            <EditorHeadline />
+          </div>
 
-          <Reveal delay={220} className="flex flex-wrap gap-3">
+          <Reveal delay={200} className="mt-6 flex flex-wrap items-center justify-center gap-3 md:mt-8 short:mt-3">
             <ButtonLink href={hero.primaryCta.href} size="lg">
               {hero.primaryCta.label}
             </ButtonLink>
-            <ButtonLink
-              href={hero.secondaryCta.href}
-              variant="secondary"
-              size="lg"
-            >
+            <ButtonLink href={hero.secondaryCta.href} variant="secondary" size="lg">
               {hero.secondaryCta.label}
             </ButtonLink>
           </Reveal>
-        </div>
 
-        {/* The five stages, as a quiet rail — the same words the book prints. */}
-        <Parallax distance={-56} className="mt-24 lg:mt-32">
-          <ul className="flex flex-wrap gap-x-10 gap-y-4 border-t border-line pt-6">
-            {stages.map((stage, i) => (
-              <li key={stage.word} className="flex items-baseline gap-3">
-                <span className="text-eyebrow font-semibold uppercase text-accent">
-                  0{i + 1}
-                </span>
-                <span className="text-h3 text-ink">{stage.word}</span>
-              </li>
-            ))}
-          </ul>
-        </Parallax>
-      </Container>
+          <FloatingCovers layout="hand" />
+        </Container>
+
+        {/* The foot of the frame: time, pitch, email — orionix's corners.
+         * On phones the pitch goes first and time and email share a row; on
+         * short screens the pitch gives way so the hero still fits. */}
+        <Container className="relative z-10 flex flex-wrap items-center justify-between gap-x-4 pb-3 lg:grid lg:grid-cols-[1fr_minmax(0,28rem)_1fr] lg:items-end lg:pb-8">
+          {/* Under 360px time and email cannot share a row; the time goes. */}
+          <div className="max-[359px]:hidden">
+            <StudioClock className="text-xs sm:text-sm" />
+          </div>
+          <p className="order-first mx-auto mb-2 w-full max-w-md text-center text-sm leading-relaxed text-ink-muted max-lg:snug:hidden lg:order-none lg:mb-0 lg:w-auto">
+            {hero.body}
+          </p>
+          <a
+            href={`mailto:${site.email}`}
+            className="inline-flex min-h-11 items-center text-xs text-ink underline max-[359px]:mx-auto sm:text-sm lg:justify-self-end underline-offset-4 transition-colors duration-200 hover:text-accent"
+          >
+            {site.email}
+          </a>
+        </Container>
+      </ParallaxFrame>
     </section>
   );
 }

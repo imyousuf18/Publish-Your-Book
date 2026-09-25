@@ -46,7 +46,7 @@ checked before it ships.
 
 - Headings are weight **400** (set in base styles) — elegance comes from size, not weight.
 - **Italic is the signature**: one emphasised word or phrase per headline, same face.
-  Current uses: *template.* (hero), *shelf.* (services), *nothing hidden.* (process),
+  Current uses: *you.* (hero), *template.* (loader cover), *shelf.* (services), *nothing hidden.* (process),
   *chapters.* (CTA). Use it sparingly — one per heading at most.
 - Root size is fluid: `html { font-size: clamp(16px, 7.36px + 0.65vw, 24px) }`.
   **Every rem grows with the viewport** — 16.7px at 1440, 19.7px at 1900. Test
@@ -66,9 +66,6 @@ Caps are reached around 1100–1300px, so desktop is unchanged. They were fixed 
 before, and the root floors at 16px, so a phone got desktop sizes (display 80px on
 390px) and long words filled the screen. `lead` 1.0625rem and `eyebrow` 0.9375rem
 are fixed.
-
-The loader book (`Book.tsx`) pins its text in **px**, not rem, because it lives in
-a fixed 820×540 coordinate space that must not scale with the root.
 
 ## Shape and depth
 

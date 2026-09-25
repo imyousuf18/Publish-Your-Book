@@ -21,9 +21,11 @@ export function organizationSchema() {
     areaServed: "US",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Austin",
-      addressRegion: "TX",
-      addressCountry: "US",
+      streetAddress: site.address.line1,
+      addressLocality: site.address.city,
+      addressRegion: site.address.region,
+      postalCode: site.address.postalCode,
+      addressCountry: site.address.country,
     },
   };
 }
@@ -74,6 +76,26 @@ export function itemListSchema(items: { name: string; path: string }[]) {
       name: item.name,
       url: `${site.url}${item.path}`,
     })),
+  };
+}
+
+export function articleSchema(article: {
+  title: string;
+  description: string;
+  path: string;
+  datePublished: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.description,
+    url: `${site.url}${article.path}`,
+    datePublished: article.datePublished,
+    dateModified: article.datePublished,
+    author: { "@type": "Organization", name: site.name, url: site.url },
+    publisher: { "@type": "Organization", name: site.name, url: site.url },
+    mainEntityOfPage: `${site.url}${article.path}`,
   };
 }
 

@@ -3,7 +3,8 @@
 ## Hard rules
 
 1. **No hard-coded copy in components.** All text comes from `src/lib/site.ts`, or
-   `src/lib/service-pages.ts` for the six service pages.
+   `src/lib/service-pages.ts` for the six service pages and `src/lib/articles.ts`
+   for the ten Author Guide articles.
 2. **No hard-coded colours, sizes, radii or fonts.** Use tokens from `globals.css`.
 3. **Orange fills take ink text, never white.** Orange text uses `text-accent`.
    See `DESIGN.md`.
@@ -57,6 +58,26 @@ pairs in a row without `flex-wrap`.
 ### Width-only breakpoints catch sideways phones
 `md:` is true on an 844×390 phone. Anything that sticks or pins tall content
 needs `roomy:` or `pin:` (see DESIGN.md › Layout).
+
+### cqw on the container itself resolves against the viewport
+An element is a query container for its **descendants**, never for itself. A
+`.book3d` rule with `container-type: inline-size` AND `padding: 0 4cqw` got
+padding of 4% of the *viewport* — 57.6px a side at 1440, 72.8px at 1820 — which
+ate half of every book and got worse the wider the screen. Only use `cqw` on a
+container's children.
+
+### Never let leaving depend on an animation finishing
+The intro's exit set `done` in a GSAP `onComplete`. GSAP runs on
+requestAnimationFrame, which background tabs throttle and some environments
+suspend, so the callback never fired and the intro stayed over the page. Exits
+now also set a timer; whichever lands first wins.
+
+### A shader per material is a shader compiled per material
+`customProgramCacheKey` decides which materials share a compiled program. The
+book gave each sheet its own key, so the identical page shader compiled nine
+times — ~4.5s of frozen main thread before the intro could draw. Share one key
+unless the shader source genuinely differs; per-material uniforms survive
+sharing. And compile with `renderer.compileAsync` before the first frame.
 
 ### Invalid CSS fails silently
 e.g. `scale(clamp(...vw...))` produces a length, not a number, and the browser

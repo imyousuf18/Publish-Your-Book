@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/motion/Reveal";
 import { TextReveal } from "@/components/motion/TextReveal";
-import { articles } from "@/lib/site";
+import { articles } from "@/lib/articles";
 
 export function Articles() {
   return (
@@ -38,7 +38,7 @@ export function Articles() {
                 </p>
                 <h3 className="mt-5 text-h3">{article.title}</h3>
                 <p className="mt-4 flex-1 text-sm leading-relaxed text-ink-muted">
-                  {article.body}
+                  {article.dek}
                 </p>
                 <span className="mt-8 border-b-2 border-accent pb-1 text-sm font-medium text-ink">
                   Read the guide

@@ -137,7 +137,7 @@ export const serviceDetails: ServiceDetail[] = [
     portfolio: {
       heading: "A memoir, from forty hours of recordings.",
       intro: "Long Way from Kerrville began as recorded family interviews and no written draft. It ended as a memoir the author approved before release.",
-      covers: ["Long Way from Kerrville"],
+      covers: ["We All Have a Story! Here's Mine.", "And So It Is..."],
       caseIndex: 0,
     },
     faqs: [
@@ -240,14 +240,9 @@ export const serviceDetails: ServiceDetail[] = [
     },
     portfolio: {
       heading: "A book that finally moved.",
-      intro: "The Quiet Ledger needed a developmental edit. It cut two chapters, and the author approved every change. Below, a memoir that went through developmental and line editing on its way to press.",
-      covers: ["The Quiet Ledger"],
+      intro: "Below, a memoir that went through developmental and line editing on its way to press, from first draft to finished manuscript.",
+      covers: ["Broken Soul", "Facts Are Stubborn Things"],
       caseIndex: 0,
-      quote: {
-        text: "The developmental edit cut two chapters and the book finally moved. I approved every change.",
-        name: "D. Marchetti",
-        book: "The Quiet Ledger · Business",
-      },
     },
     faqs: [
       { q: "Which type of editing does my manuscript need?", a: "Most manuscripts need some levels and not others. We read yours and tell you which, and in what order. The author guide has a plain comparison of the four." },
@@ -351,14 +346,14 @@ export const serviceDetails: ServiceDetail[] = [
       heading: "Covers and interiors we have finished.",
       intro: "A selection of the books we designed. Filter them by genre on the work page.",
       covers: [
-        "The Salt Road",
-        "Long Way from Kerrville",
-        "The Quiet Ledger",
-        "Mabel and the Nine Moons",
-        "Ashes of the Ninth Court",
-        "Still Waters, Still Here",
-        "Forty Weeks of Small Repairs",
-        "What the River Kept",
+        "And So It Is...",
+        "The Nanny",
+        "Embers",
+        "Lucy and the Enchanted Forest",
+        "The Rule of Three",
+        "The Brangus Rebellion",
+        "Facts Are Stubborn Things",
+        "Voodoo War",
       ],
       caseIndex: 1,
     },
@@ -463,7 +458,7 @@ export const serviceDetails: ServiceDetail[] = [
     portfolio: {
       heading: "From a rhyming text to a character who can carry a series.",
       intro: "Mabel and the Nine Moons began as a finished text with no illustrations and no page plan.",
-      covers: ["Mabel and the Nine Moons"],
+      covers: ["Lucy and the Enchanted Forest", "Roy Rooster: The Brave Little Soul", "Great Grandma Loves Me!"],
       caseIndex: 1,
     },
     faqs: [
@@ -568,17 +563,12 @@ export const serviceDetails: ServiceDetail[] = [
       heading: "Books taken all the way to print and eBook.",
       intro: "One case study follows a book from the first conversation to paperback and eBook, and shows what changed on the way.",
       covers: [
-        "Long Way from Kerrville",
-        "Mabel and the Nine Moons",
-        "The Salt Road",
-        "What the River Kept",
+        "We All Have a Story! Here's Mine.",
+        "Lucy and the Enchanted Forest",
+        "The Assassin's Betrayal",
+        "Think Big Live",
       ],
       caseIndex: 0,
-      quote: {
-        text: "Six weeks from manuscript to a hardcover I was proud to hand to my mother.",
-        name: "T. Nakamura",
-        book: "What the River Kept · Fiction",
-      },
     },
     faqs: [
       { q: "Do I need an ISBN?", a: "For print books sold through retailers, yes. We can register one in your name so you remain the publisher of record." },

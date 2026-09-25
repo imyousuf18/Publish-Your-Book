@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { articles } from "@/lib/articles";
 import { serviceSlugs } from "@/lib/service-pages";
 import { site } from "@/lib/site";
 
@@ -16,6 +17,11 @@ const routes = [
   { path: "/about", priority: 0.7, changeFrequency: "monthly" as const },
   { path: "/case-studies", priority: 0.8, changeFrequency: "monthly" as const },
   { path: "/author-guide", priority: 0.9, changeFrequency: "weekly" as const },
+  ...articles.map((a) => ({
+    path: `/author-guide/${a.slug}`,
+    priority: 0.8,
+    changeFrequency: "monthly" as const,
+  })),
   { path: "/pricing", priority: 0.8, changeFrequency: "monthly" as const },
   { path: "/contact", priority: 0.9, changeFrequency: "yearly" as const },
 ];

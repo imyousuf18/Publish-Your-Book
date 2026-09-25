@@ -8,6 +8,9 @@ import { Process } from "@/components/sections/Process";
 import { Services } from "@/components/sections/Services";
 import { TestimonialFeature } from "@/components/sections/TestimonialFeature";
 import { Work } from "@/components/sections/Work";
+import { articles } from "@/lib/articles";
+
+const homeArticles = articles.filter((a) => a.featuredHome);
 
 export default function HomePage() {
   return (
@@ -20,7 +23,7 @@ export default function HomePage() {
       <Work />
       <Cases />
       <TestimonialFeature />
-      <ArticlesList />
+      <ArticlesList articles={homeArticles} viewAllHref="/author-guide" />
       <CtaBanner />
     </>
   );

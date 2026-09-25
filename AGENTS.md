@@ -20,18 +20,18 @@ Next.js 16 App Router · React 19 · Tailwind v4 (CSS-first `@theme`) · GSAP + 
 | Anything | `docs/CONVENTIONS.md` — rules and traps that have already caused bugs |
 | Copy, content, goals | `docs/PROJECT.md` |
 | Colours, fonts, spacing | `docs/DESIGN.md` |
-| Loader, nav, footer, scroll, hover | `docs/INTERACTIONS.md` |
+| Intro, nav, footer, scroll, hover | `docs/INTERACTIONS.md` |
 | Where files live | `docs/ARCHITECTURE.md` |
 | What to work on next | `docs/ROADMAP.md` |
 
 ## Non-negotiables
 
-- Copy only in `src/lib/site.ts` (and `src/lib/service-pages.ts` for the six service pages). Visual values only as tokens in `src/app/globals.css`.
+- Copy only in `src/lib/site.ts` (`src/lib/service-pages.ts` for the six service pages, `src/lib/articles.ts` for the ten Author Guide articles). Visual values only as tokens in `src/app/globals.css`.
 - 3D is plain CSS in the `3D OBJECTS` block of `globals.css` (Tailwind drops unknown transform values silently). Every ancestor between a perspective root and a `translateZ` child must be preserve-3d (`.stage3d`) or the depth flattens.
 - New `--text-*`, `--radius-*`, `--shadow-*` tokens must be registered in `src/lib/utils.ts`, or `cn()` silently drops the class.
 - Orange `#ff8308` (`accent-bright`) is for **fills with ink text** only. Orange text is `text-accent`. Never white on orange.
 - WCAG AA contrast, 44px touch targets, keyboard access, reduced-motion fallbacks on everything.
-- The book loader steps **one page per scroll gesture**, and the back board **never flips**. Do not revert either.
+- The homepage intro is a **pre-rendered video** of the 3D book: it plays itself once per visit, only on landing, and **any input skips it**; it must never hold anyone (2s to start, or it fades). Change the book in `components/book3d/`, then re-render with `scripts/render-intro.mjs` — never ship the 3D scene live on the homepage again. The back board **never flips**. See `docs/INTERACTIONS.md` §1.
 - Cursor is native. No custom cursor.
 - Don't use `??` in `resolveSiteUrl()` — empty env strings crashed the Vercel build.
 - Keep pinned sections out of sticky/transformed ancestors; keep page content inside `#page-content`.

@@ -20,17 +20,19 @@ Scripts: `npm run dev | build | start | lint | typecheck`.
 ```
 src/
 ├── app/
-│   ├── layout.tsx       Fonts, metadata, loader, header, #page-content, footer
+│   ├── layout.tsx       Fonts, metadata, intro guard + BookLoader, header, #page-content, footer
 │   ├── page.tsx         Homepage — composes sections in order
 │   ├── globals.css      ALL design tokens + base styles + hand-written CSS blocks
 │   ├── {services,process,work,genres,about,case-studies,author-guide,pricing,contact}/
 │   │                    Real pages, one per nav item — see "Inner pages" below
 │   ├── services/[slug]/ The six individual service pages (SSG, dynamicParams off)
+│   ├── author-guide/[slug]/ The ten Author Guide articles (SSG, dynamicParams off)
 │   ├── {privacy,terms}/ Short legal pages (noindex)
 │   └── {sitemap,robots}.ts  Generated /sitemap.xml and /robots.txt
 ├── components/
-│   ├── book/Book.tsx            3D book markup (820×540 px space, pure markup)
-│   ├── loader/BookLoader.tsx    Full-screen intro that steps through the book
+│   ├── loader/BookLoader.tsx    Homepage intro: pre-rendered video of the book, fades into the page
+│   ├── book3d/                  The 3D book — the SOURCE of the intro video, not shipped live
+│   ├── hero/                    Hero pieces: EditorHeadline, RippleField, FloatingCovers, …
 │   ├── layout/
 │   │   ├── SiteHeader.tsx       Top header ↔ bottom dock ↔ hidden (3 states)
 │   │   ├── NavCapsule.tsx       Dark pill nav with animated ring + "More"
@@ -49,6 +51,7 @@ src/
 │   │                            ServiceSignals, ServiceProcess, ServiceBeginEnd,
 │   │                            ServicePortfolio (+Book3D), ServiceNext, ServiceStart,
 │   │                            ServiceRoad (the /services road map)
+│   ├── article/                 Article-page blocks: ArticleHero, ArticleBody, ArticleNext
 │   ├── seo/JsonLd.tsx           Renders a JSON-LD script
 │   ├── sections/                One file per homepage band
 │   ├── pages/                   Inner-page blocks: PageHero, FaqList, PointGrid,
@@ -58,7 +61,8 @@ src/
 └── lib/
     ├── site.ts          Site-wide copy, nav, section content, resolveSiteUrl()
     ├── service-pages.ts Full copy for the six service pages (split out for size)
-    ├── schema.ts        JSON-LD builders: organisation, service, breadcrumb, list, FAQ
+    ├── articles.ts      Full copy for the ten Author Guide articles (split out for size)
+    ├── schema.ts        JSON-LD builders: organisation, service, article, breadcrumb, list, FAQ
     └── utils.ts         cn() with extendTailwindMerge
 public/
 ├── Assets/              Logos (logo-wordmark.png is the trimmed header logo)
@@ -89,7 +93,8 @@ Every page is `PageHero` → body sections → `CtaBanner`. Hero copy lives in
 | `/genres` | GenresList · Work |
 | `/about` | AboutStory · PointGrid (`values`) · Journeys · TestimonialFeature |
 | `/case-studies` | Cases · TestimonialFeature |
-| `/author-guide` | ArticlesList · FaqList |
+| `/author-guide` | ArticlesList (all ten) · FaqList |
+| `/author-guide/[slug]` | ArticleHero · ArticleBody (sections + key takeaways + related link) · ArticleNext · CtaBanner |
 | `/pricing` | PlanCards (no prices — quoted per manuscript) · PointGrid (`pricingFactors`) · FaqList |
 | `/contact` | compact PageHero · ContactForm (no CtaBanner) |
 
@@ -119,6 +124,25 @@ road map with no other change.
 Each page emits `Service`, `BreadcrumbList` and `FAQPage` JSON-LD and sets its
 own title, description, keywords, canonical and Open Graph in `generateMetadata`.
 
+## Author Guide articles
+
+`/author-guide/[slug]` is one template driven by `src/lib/articles.ts`, the same
+pattern as the service pages. Each of the ten articles has an intro, numbered
+sections (heading + body + optional list), a "key takeaways" summary and one
+related link (to a service page or another inner page). `ArticlesList` — shown
+on both the homepage and `/author-guide` — reads the teaser fields (`tag`,
+`title`, `dek`) from the same array, so there is one source for an article's
+copy everywhere it appears.
+
+The homepage shows only the articles marked `featuredHome: true` (five of the
+ten); `/author-guide` shows all ten. To add an eleventh article: add an entry to
+`articles` in `articles.ts` with a unique `slug` — it appears in the guide, the
+sitemap and (if `featuredHome` is set) the homepage with no other change. Each
+page emits `Article` and `BreadcrumbList` JSON-LD and sets its own title,
+description, keywords and canonical in `generateMetadata`. `publishedDate` in
+`articles.ts` is one shared date for all ten (the day they were written), not a
+per-article guess.
+
 ## Data flow
 
 Content is static TypeScript. Sections import from `src/lib/site.ts` (and the
@@ -134,7 +158,7 @@ Keep new sections server-side unless they genuinely need the browser.
 ## Layout layering (important)
 
 ```
-BookLoader        fixed, z-[200]   — removed from the DOM when finished
+BookLoader        fixed, z-[200]   — homepage only; removed from the DOM when finished
 SiteHeader        fixed, z-50      — header at top, dock at bottom
 #page-content     relative, z-1, opaque bg, margin-bottom: var(--footer-h)
 #site-footer      fixed bottom-0, z-0  (only when html[data-footer-reveal="on"])

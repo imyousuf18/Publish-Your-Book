@@ -9,7 +9,19 @@ import Image from "next/image";
  * Purely visual: the title and category are printed under it by the caller,
  * so the image alt describes the cover, not the surrounding text.
  */
-export function Book3D({ src, alt, sizes }: { src: string; alt: string; sizes?: string }) {
+export function Book3D({
+  src,
+  alt,
+  sizes,
+  priority = false,
+}: {
+  src: string;
+  alt: string;
+  sizes?: string;
+  /** Load eagerly. Set for books above the fold — lazily loaded covers left
+   *  blank gaps in the hero while the browser got round to fetching them. */
+  priority?: boolean;
+}) {
   return (
     <div className="book3d">
       <div className="book3d__body">
@@ -21,6 +33,7 @@ export function Book3D({ src, alt, sizes }: { src: string; alt: string; sizes?: 
             src={src}
             alt={alt}
             fill
+            priority={priority}
             sizes={sizes ?? "(min-width: 1024px) 18vw, (min-width: 640px) 30vw, 44vw"}
             className="object-cover"
           />

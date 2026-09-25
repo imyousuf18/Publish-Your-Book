@@ -1,374 +1,250 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { Book, fitScale } from "@/components/book/Book";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { lockScroll, unlockScroll } from "@/components/motion/SmoothScroll";
+import {
+  INTRO_EARLY_SKIP,
+  INTRO_MEDIA,
+  INTRO_OFF_CLASS,
+  INTRO_SEEN_KEY,
+  INTRO_VIDEO_HTML,
+} from "@/lib/intro";
 
-/* The loader advances in DISCRETE STEPS, one per scroll gesture.
+/* The homepage intro: a short video of the book — it arrives, opens, turns its
+ * pages, closes — then a fade into the homepage. ~3.5s, once per visit, only
+ * when a visit lands on the homepage.
  *
- * It used to be scrubbed: deltas accumulated into a target and the timeline
- * eased toward it. That is lovely on a mouse wheel and unusable everywhere
- * else — one trackpad flick with inertia dumps thousands of pixels and skips
- * the whole book, while a cautious two-finger nudge barely moves it. Both
- * complaints ("scrolls too much", "doesn't scroll properly") are the same bug.
+ * It is a VIDEO, pre-rendered from the 3D book (app/dev/intro-studio,
+ * scripts/render-intro.mjs), not the 3D book running live. Live, the book
+ * needed ~2.8s of downloading and GPU work before it could move on a fast
+ * desktop, and never made it in time on the dev server or slower phones —
+ * visitors got a closed book that lifted away without opening. The video
+ * starts almost at once, on every device, and the homepage carries no 3D code.
  *
- * So: the timeline carries labelled stops, a gesture moves exactly one stop,
- * and every event inside that gesture's inertia burst is swallowed. Wheel,
- * touch and keyboard all go through the same one-step function, so a phone
- * behaves identically to a desktop.
+ * The rules:
  *
- * The steps are:
- *   0  closed book at rest
- *   1  grown and opened
- *   2..6  one leaf turned per step (five leaves, no overlap — an overlapping
- *         riffle cannot be stepped through one page at a time)
- *   7  closed, turned over, settled  -> loader exits
+ *   Instant    Frame 0 of the video is a still in the server HTML (<picture>,
+ *              one per framing), so the book is there at first paint. The
+ *              <video> is in the server HTML too, and the guard in <head>
+ *              starts it as soon as the HTML is parsed — it does not wait for
+ *              this component (on a slow first load, seconds later).
+ *   Short      Plays by itself, then fades into the page. Nothing to learn.
+ *   Skippable  Any wheel, touch, click or key — or Skip — fades out at once,
+ *              even input from before the JavaScript arrived (the guard
+ *              records it). Tab too: the page's "Skip to content" link is the
+ *              first stop and must not sit hidden under the intro.
+ *   Bounded    Not playing LOADING_SIGN_MS after it could have? A small
+ *              loading sign appears. Not playing by DEADLINE_MS? It fades
+ *              away. Stalls mid-play for STALL_MS? Same. Autoplay refused
+ *              (e.g. iOS Low Power Mode)? Same, straight away.
+ *   Seen       A homepage opened in a background tab waits: nothing is spent
+ *              — not the clock, not the once-per-session flag — until the
+ *              tab is actually looked at.
+ *   Once       Once per tab session, only when the visit lands on "/"; off
+ *              for reduced motion and Save-Data. Decided in lib/intro.ts.
  */
 
-/** Seconds each phase occupies on the timeline. Stops are derived from these. */
-const D = { grow: 1.1, open: 0.9, leaf: 0.9, close: 1.2, settle: 0.8 };
+const LOADING_SIGN_MS = 500;
+const DEADLINE_MS = 2000;
+const STALL_MS = 1500;
+const FADE = { natural: 700, quick: 350 };
 
-/** How long one step takes to play out, in seconds. */
-const STEP_DUR = 0.85;
-
-/** Quiet time, in ms, before new wheel events count as a fresh gesture.
- *  Trackpad inertia keeps firing for a while after the fingers lift; anything
- *  inside this window belongs to the gesture already served. */
-const GESTURE_GAP = 220;
-
-/** Minimum finger travel, in px, that counts as one swipe. */
-const SWIPE_PX = 36;
-
-const REST = { scale: 0.46, rotY: -28, rotX: 12, rotZ: -2 };
-
-/* Resting size on narrow screens. The spread is fitted to the viewport width,
- * and a closed book is only half a spread, so at 0.46 it rested ~80px wide on
- * a 390px phone: a speck in the middle of a dark screen. Phones rest it larger;
- * it still grows to the full-width open spread (OPEN.scale) from there. */
-const REST_SCALE_NARROW = 0.78;
-const restScale = () => (window.innerWidth < 640 ? REST_SCALE_NARROW : REST.scale);
-const OPEN = { scale: 1, rotY: -6, rotX: 6, rotZ: 0 };
-
-/* A closed book occupies only the right half of the spread box, so it needs a
- * shift to sit optically centred. Opening unwinds the shift to zero.
- *
- * The close turns the whole book over (see TURN), which mirrors the X axis —
- * so the shift has to be inverted to land centred again rather than half a
- * book-width off to the side. */
-const CLOSED_RIGHT = -25;
-const OPEN_CENTRE = 0;
-const CLOSED_MIRRORED = 25;
-
-/** Degrees the book turns over on closing, to present its back cover. */
-const TURN = 180;
-
-const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+const introWanted = () =>
+  typeof document !== "undefined" && !document.documentElement.classList.contains(INTRO_OFF_CLASS);
+const noSubscribe = () => () => {};
 
 export function BookLoader() {
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const barRef = useRef<HTMLDivElement | null>(null);
-  const hintRef = useRef<HTMLParagraphElement | null>(null);
-  const skipRef = useRef<HTMLButtonElement | null>(null);
-  const fit = useRef<HTMLDivElement | null>(null);
-  const book = useRef<HTMLDivElement | null>(null);
-  const spread = useRef<HTMLDivElement | null>(null);
-  const cover = useRef<HTMLDivElement | null>(null);
-  const back = useRef<HTMLDivElement | null>(null);
-  const leaves = useRef<(HTMLDivElement | null)[]>([]);
-
-  /* Once the loader is done it is removed from the DOM entirely rather than
-   * left as a display:none shell — roughly thirty nodes, several of which
-   * carry will-change hints, kept alive for the life of the page otherwise. */
+  /* The server always renders the intro; the pre-paint guard hides it with
+   * CSS when it is off. On the client the answer is read from <html> — via
+   * useSyncExternalStore, so hydration uses the server's answer first and a
+   * client-side return to the homepage never flashes it. */
+  const wanted = useSyncExternalStore(noSubscribe, introWanted, () => true);
+  /* Mounted from the root layout (so it sits above the header and dock), but
+   * only ever rendered on the homepage — other pages don't even get its
+   * markup, or its still. */
+  const home = usePathname() === "/";
   const [done, setDone] = useState(false);
+  const active = home && wanted && !done;
 
-  const measure = useCallback(() => {
-    if (fit.current) fit.current.style.transform = `scale(${fitScale()})`;
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const signRef = useRef<HTMLDivElement | null>(null);
+  const leaving = useRef(false);
+
+  const finish = useCallback(() => {
+    document.documentElement.classList.add(INTRO_OFF_CLASS);
+    setDone(true);
   }, []);
 
-  /* Deliberately a plain effect, not useGSAP: useGSAP reverts its gsap.context
-   * on every cleanup — including React StrictMode's double-invoke — which kills
-   * the in-flight timeline and leaves the loader frozen. This owns its own
-   * lifecycle. */
-  useEffect(() => {
-    /* Once finished, the loader renders nothing and every ref is null. Fast
-     * Refresh re-runs effects on edit, and without this guard gsap.set(null)
-     * threw and forced a full reload. Never animate nodes that are not there. */
-    if (done || !rootRef.current || !book.current || !cover.current || !back.current) return;
-
-    lockScroll();
-
-    const leafNodes = leaves.current.filter(Boolean) as HTMLDivElement[];
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      setDone(true);
-      unlockScroll();
-    };
-
-    if (reduced) {
-      gsap.set(rootRef.current, { display: "none" });
-      window.removeEventListener("resize", measure);
-      finish();
-      return;
-    }
-
-    // Fit and resting state first, then reveal — nothing is painted mid-jump.
-    measure();
-    window.addEventListener("resize", measure);
-
-    gsap.set(book.current, {
-      scale: restScale(),
-      rotateY: REST.rotY,
-      rotateX: REST.rotX,
-      rotateZ: REST.rotZ,
-    });
-    gsap.set(spread.current, { xPercent: CLOSED_RIGHT });
-    gsap.set([cover.current, back.current, ...leafNodes], { rotateY: 0 });
-    gsap.to(fit.current, { opacity: 1, duration: 0.45, ease: "power2.out" });
-
-    /* Paused, and every tween eased "none": the step tween below supplies the
-     * easing, so a phase does not get eased twice. */
-    const tl = gsap.timeline({ paused: true, defaults: { ease: "none" } });
-
-    /** Timeline times, in seconds, that a gesture can come to rest on. */
-    const stopTimes: number[] = [0];
-    let t = 0;
-
-    // 1. Grow and open, as one step — a closed book comes forward, then the
-    //    front cover swings left and the spread recentres.
-    tl.to(
-      book.current,
-      {
-        scale: OPEN.scale,
-        rotateY: OPEN.rotY,
-        rotateX: OPEN.rotX,
-        rotateZ: OPEN.rotZ,
-        duration: D.grow,
-      },
-      t,
-    );
-    t += D.grow;
-    tl.to(cover.current, { rotateY: -180, duration: D.open }, t).to(
-      spread.current,
-      { xPercent: OPEN_CENTRE, duration: D.open },
-      t,
-    );
-    t += D.open;
-    stopTimes.push(t);
-
-    /* 2. Leaves turn one at a time, back to back. The old build overlapped
-     * them into a riffle, which looked good scrubbed but cannot be stepped:
-     * stopping "after page two" would leave pages three to five hanging
-     * half-turned. Sequential turns are what make one-page-per-gesture true. */
-    leafNodes.forEach((leaf) => {
-      tl.to(leaf, { rotateY: -180, duration: D.leaf }, t);
-      t += D.leaf;
-      stopTimes.push(t);
-    });
-
-    /* 4. Close.
-     *
-     * The back board NEVER flips. Flipping it was a seventh page turn after
-     * the five leaves — no amount of overlap or recolouring disguises that,
-     * because it genuinely is one more page turning on a book that already
-     * looks shut.
-     *
-     * What a reader actually does is lift the whole read stack back over at
-     * once. So the front cover and every leaf return to 0 together, as a
-     * single slab, while the book itself turns over. The back board stays put
-     * at 0 the entire time; once the book has turned, the face pointing at the
-     * viewer is that board's reverse — the back cover — with the pages tucked
-     * behind it. One gesture, no extra flip, and it lands back cover up. */
-    tl.to([cover.current, ...leafNodes], { rotateY: 0, duration: D.close }, t)
-      .to(book.current, { rotateY: OPEN.rotY + TURN, duration: D.close }, t)
-      .to(spread.current, { xPercent: CLOSED_MIRRORED, duration: D.close }, t);
-    t += D.close;
-
-    /* 5. The closed book settles back down to resting size, keeping the turn
-     * (TURN - REST.rotY, not -REST.rotY — the latter would quietly rotate the
-     * book back to front-cover-up and undo the close). */
-    tl.to(
-      book.current,
-      {
-        scale: restScale(),
-        rotateY: TURN - REST.rotY,
-        rotateX: REST.rotX,
-        rotateZ: -REST.rotZ,
-        duration: D.settle,
-      },
-      t,
-    );
-    t += D.settle;
-    // Close and settle read as one movement, so they share a single stop.
-    stopTimes.push(t);
-
-    /* ------------------------------------------------------------------
-     * One gesture, one step.
-     * ---------------------------------------------------------------- */
-    const total = tl.duration();
-    const stops = stopTimes.map((time) => clamp(time / total, 0, 1));
-    const last = stops.length - 1;
-
-    const head = { p: 0 };
-    let index = 0;
-    let animating = false;
-    let burst = false;
-    let burstTimer: ReturnType<typeof setTimeout> | undefined;
-    let touchY = 0;
-    let swiped = false;
-
-    const exit = () => {
-      if (finished) return;
-      gsap
-        .timeline({ onComplete: finish })
-        .to(rootRef.current, { yPercent: -100, duration: 0.9, ease: "power3.inOut" })
-        .set(rootRef.current, { display: "none" });
-    };
-
-    /** Move exactly one stop. Anything asking for more is ignored. */
-    const step = (dir: 1 | -1) => {
-      if (animating || finished) return;
-      if (index === last && dir === 1) {
-        exit();
+  /** Fade into the homepage. Timer-driven, not animation-driven: leaving must
+   *  never depend on a frame being drawn (background tabs draw none). */
+  const leave = useCallback(
+    (pace: keyof typeof FADE = "quick") => {
+      if (leaving.current) return;
+      leaving.current = true;
+      const root = rootRef.current;
+      if (!root) {
+        finish();
         return;
       }
-      const next = clamp(index + dir, 0, last);
-      if (next === index) return;
-      index = next;
+      root.style.transition = `opacity ${FADE[pace]}ms ease`;
+      root.style.opacity = "0";
+      root.style.pointerEvents = "none";
+      setTimeout(finish, FADE[pace] + 50);
+    },
+    [finish],
+  );
 
-      if (hintRef.current) {
-        gsap.to(hintRef.current, { autoAlpha: 0, duration: 0.3, overwrite: true });
+  useEffect(() => {
+    if (!active) return;
+    const host = hostRef.current;
+    if (!host) return;
+    lockScroll();
+
+    const video = host.querySelector("video");
+    if (!video) return;
+
+    let started = false; // the clock is running (the tab has been seen)
+    let playing = false;
+    const timers: number[] = [];
+    const later = (fn: () => void, ms: number) => timers.push(window.setTimeout(fn, ms));
+    let stall = 0;
+
+    const showSign = (on: boolean) => {
+      if (signRef.current) signRef.current.style.opacity = on ? "1" : "0";
+    };
+
+    const onPlaying = () => {
+      playing = true;
+      showSign(false);
+      clearTimeout(stall);
+      // The bar runs with the video: one transition over what is left of it.
+      const bar = barRef.current;
+      if (bar && Number.isFinite(video.duration)) {
+        const left = Math.max(0, video.duration - video.currentTime);
+        bar.style.transition = `transform ${left}s linear`;
+        bar.style.transform = "scaleX(1)";
       }
-
-      animating = true;
-      gsap.to(head, {
-        p: stops[index],
-        duration: STEP_DUR,
-        ease: "power2.inOut",
-        overwrite: true,
-        onUpdate: () => {
-          tl.progress(head.p);
-          if (barRef.current) barRef.current.style.transform = `scaleX(${head.p})`;
-        },
-        onComplete: () => {
-          animating = false;
-          // The book is shut and settled: let it be seen, then release.
-          if (index === last) gsap.delayedCall(0.45, exit);
-        },
-      });
     };
-
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) < 4) return;
-      clearTimeout(burstTimer);
-      burstTimer = setTimeout(() => {
-        burst = false;
-      }, GESTURE_GAP);
-      /* Already served this burst — or still playing the last step. Either way
-       * the event is inertia, not intent. Note `burst` is set even when the
-       * step is refused, so a long flick cannot queue up behind the animation
-       * and fire the moment it ends. */
-      const served = burst || animating;
-      burst = true;
-      if (served) return;
-      step(e.deltaY > 0 ? 1 : -1);
+    const onWaiting = () => {
+      if (!playing) return;
+      clearTimeout(stall);
+      stall = window.setTimeout(() => leave(), STALL_MS);
     };
+    const onEnded = () => leave("natural");
+    const onError = () => leave();
+    video.addEventListener("playing", onPlaying);
+    // The guard may have started it before this code ran.
+    if (!video.paused && video.readyState > 2) onPlaying();
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("ended", onEnded);
+    video.addEventListener("error", onError);
 
-    const onTouchStart = (e: TouchEvent) => {
-      touchY = e.touches[0].clientY;
-      swiped = false;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (swiped) return;
-      const dy = touchY - e.touches[0].clientY;
-      if (Math.abs(dy) < SWIPE_PX) return;
-      swiped = true; // one step per finger-down, however far the finger travels
-      step(dy > 0 ? 1 : -1);
-    };
-
-    // Keyboard: the loader must never be a dead end for anyone who cannot scroll.
-    const onKey = (e: KeyboardEvent) => {
-      if ([" ", "PageDown", "ArrowDown", "Enter"].includes(e.key)) {
-        e.preventDefault();
-        step(1);
+    /* Start only when the reader can see the tab: the play, the clock and the
+     * once-per-session flag are all spent here. */
+    const begin = () => {
+      if (document.hidden || started || leaving.current) return;
+      started = true;
+      try {
+        sessionStorage.setItem(INTRO_SEEN_KEY, "1");
+      } catch {
+        // Storage blocked: it simply plays again next visit.
       }
-      if (["ArrowUp", "PageUp"].includes(e.key)) {
-        e.preventDefault();
-        step(-1);
-      }
-      if (e.key === "Escape") exit(); // always an out
+      video.preload = "auto";
+      video.play().catch(() => leave()); // autoplay refused: don't hold anyone
+      later(() => !playing && showSign(true), LOADING_SIGN_MS);
+      later(() => !playing && leave(), DEADLINE_MS);
     };
 
-    const skip = skipRef.current;
-    skip?.addEventListener("click", exit);
+    // Asked to skip before this code had even loaded.
+    if ((window as unknown as Record<string, unknown>)[INTRO_EARLY_SKIP]) leave();
+    else begin();
+    document.addEventListener("visibilitychange", begin);
 
-    window.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("keydown", onKey);
+    const skip = (e: Event) => {
+      // A modifier on its own is not a request to leave.
+      if (e instanceof KeyboardEvent && /^(Shift|Control|Alt|Meta)$/.test(e.key)) return;
+      leave();
+    };
+    const events = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+    events.forEach((type) => window.addEventListener(type, skip, { passive: true }));
 
     return () => {
-      clearTimeout(burstTimer);
-      gsap.killTweensOf(head);
-      skip?.removeEventListener("click", exit);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", measure);
-      tl.kill();
+      timers.forEach(clearTimeout);
+      clearTimeout(stall);
+      document.removeEventListener("visibilitychange", begin);
+      events.forEach((type) => window.removeEventListener(type, skip));
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("error", onError);
+      video.pause();
       unlockScroll();
     };
-  }, [measure, done]);
+  }, [active, leave]);
 
-  if (done) return null;
+  if (!active) return null;
 
   return (
     <div
       ref={rootRef}
+      data-intro
       className="fixed inset-0 z-[200] overflow-hidden"
       style={{ background: "var(--color-inverse)" }}
     >
-      <Book
-        fitRef={fit}
-        bookRef={book}
-        spreadRef={spread}
-        coverRef={cover}
-        backRef={back}
-        leafRefs={leaves}
+      {/* The still: frame 0 of whichever cut fits the screen's shape — the
+          same test the guard uses to pick the video. */}
+      <picture>
+        <source media="(max-aspect-ratio: 1/1)" srcSet={INTRO_MEDIA.portrait.poster} type="image/webp" />
+        {/* A plain <img> (alt="": decorative): next/image would add a
+            lazy-loading, sized wrapper this full-bleed, first-paint still must
+            not have. */}
+        <img
+          src={INTRO_MEDIA.landscape.poster}
+          alt=""
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 size-full object-cover"
+        />
+      </picture>
+
+      {/* The video: frame 0 is the still, same fit, so it covers it exactly.
+          Raw HTML — see INTRO_VIDEO_HTML for why. */}
+      <div
+        ref={hostRef}
+        aria-hidden
+        className="absolute inset-0"
+        dangerouslySetInnerHTML={{ __html: INTRO_VIDEO_HTML }}
       />
 
-      {/* An intro nobody can leave is a trap. One always-available exit, in the
-          tab order, reachable by click or Escape. */}
-      <button
-        ref={skipRef}
-        type="button"
-        className="absolute right-6 top-6 inline-flex min-h-11 items-center rounded-pill border border-inverse-ink/25 px-4 text-eyebrow font-semibold uppercase text-inverse-ink/70 transition-colors duration-200 hover:border-inverse-ink hover:text-inverse-ink lg:right-12 lg:top-10"
+      {/* Only if the video is slow to start: a quiet sign that something is on
+          its way, instead of a frozen screen. */}
+      <div
+        ref={signRef}
+        aria-hidden
+        className="pointer-events-none absolute bottom-24 left-1/2 -translate-x-1/2 opacity-0 transition-opacity duration-300 lg:bottom-28"
       >
-        Skip
-      </button>
+        <span className="block size-6 animate-spin rounded-full border-2 border-inverse-ink/15 border-t-accent-tint" />
+      </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-8 lg:p-12">
-        <div className="flex items-end justify-between gap-8">
-          <p
-            className="text-eyebrow font-semibold uppercase"
-            style={{ color: "var(--color-accent-tint)" }}
-          >
-            Publish Your Book
-          </p>
-          <p
-            ref={hintRef}
-            className="text-eyebrow font-semibold uppercase text-inverse-ink/70"
-          >
-            {/* Touchscreens swipe; "scroll" only makes sense with a wheel or trackpad. */}
-            <span className="pointer-coarse:hidden">Scroll to turn the page</span>
-            <span className="hidden pointer-coarse:inline">Swipe to turn</span>
-          </p>
-        </div>
+      {/* Skip is always there, for pointer and screen-reader users: an intro
+          nobody can leave is a trap. Any other input leaves too. */}
+      <div className="absolute right-6 top-6 lg:right-12 lg:top-10">
+        <button
+          type="button"
+          onClick={() => leave()}
+          className="inline-flex min-h-11 items-center rounded-pill border border-inverse-ink/25 px-4 text-eyebrow font-semibold uppercase text-inverse-ink/70 transition-colors duration-200 hover:border-inverse-ink hover:text-inverse-ink"
+        >
+          Skip intro
+        </button>
+      </div>
+
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 p-8 lg:p-12">
+        <p className="text-eyebrow font-semibold uppercase" style={{ color: "var(--color-accent-tint)" }}>
+          Publish Your Book
+        </p>
         <div className="mt-5 h-px w-full bg-inverse-ink/15">
           <div
             ref={barRef}

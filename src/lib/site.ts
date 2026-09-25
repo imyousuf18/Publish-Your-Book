@@ -45,10 +45,19 @@ export const site = {
   name: "Publish Your Book",
   tagline: "From finished manuscript to published author.",
   description:
-    "Full-service book publishing in Austin, Texas: ghostwriting, editing, cover design and distribution. You keep every right and every royalty.",
+    "Full-service book publishing in Chicago, Illinois: ghostwriting, editing, cover design and distribution. You keep every right and every royalty.",
   url: resolveSiteUrl(),
-  email: "hello@publishyourbook.com",
-  location: "Austin, Texas",
+  email: "info@publishyourbook.us",
+  location: "Chicago, Illinois",
+  /** Registered / mailing address. Used on the legal pages and in structured data. */
+  address: {
+    line1: "3525 W Peterson Avenue, Suite 400",
+    city: "Chicago",
+    region: "IL",
+    regionName: "Illinois",
+    postalCode: "60659",
+    country: "US",
+  },
 } as const;
 
 export type NavLink = { label: string; href: string };
@@ -102,21 +111,118 @@ export const footerNav: { title: string; links: NavLink[] }[] = [
 /* Hero                                                                        */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The hero argues one thing: the author makes the calls, we do the craft. Its
+ * toolbar lets the reader restyle the headline, so the words say the same.
+ *
+ * `title` is the line printed on the loader's book cover (and the previous
+ * hero, HeroShelf); `headline` is the live hero's. Kept apart so the loader
+ * stays as it is when the hero's words change.
+ */
 export const hero = {
-  eyebrow: "Independent publishing, done properly",
+  eyebrow: "Independent publishing, your final say",
   title: "Your book deserves better than a template.",
-  body: "We take manuscripts, and ideas that are not manuscripts yet, and turn them into books that hold their own on a shelf: edited, designed and distributed. You keep every right and every royalty.",
+  headline: "A book made with you, not for you.",
+  body: "You bring the manuscript, or the idea. We bring the editors, designers and distribution, and every choice comes to you: the edit, the cover, the type. Nothing prints without your yes, and every right and royalty stays yours.",
   primaryCta: { label: "Start your book", href: "/contact" },
-  secondaryCta: { label: "See the process", href: "/process" },
+  secondaryCta: { label: "See where you decide", href: "/process" },
 } as const;
 
-/** The five stages printed on the book's leaves in the loader animation. */
+/**
+ * The three covers standing in the hero, named from `covers` below so there is
+ * one source for the artwork. Chosen to look unlike each other at a glance:
+ * a thriller, a children's book and a fantasy title.
+ */
+export const heroShelf = [
+  "The Nanny",
+  "Lucy and the Enchanted Forest",
+  "Embers",
+] as const;
+
+/**
+ * What the hero argues once the headline has landed.
+ *
+ * This replaced a rail of the five stages. Those words are printed on the
+ * loader's book and listed again by the Process section, so the most valuable
+ * strip on the page was spending itself on a third repetition instead of the
+ * things that actually separate us from a packager.
+ */
+/**
+ * The hero's type toolbar, after orionix.framer.website, whose hero headline
+ * can be restyled live from a formatting bar under it. Ours hands the reader
+ * the choices a typesetter makes on every page — size, weight, slant,
+ * underline, ink — as a small proof of the headline's promise: on your book,
+ * the calls are yours.
+ *
+ * Inks are taken from the covers on the hero (slate from The Nanny, indigo
+ * from Lucy and the Enchanted Forest) plus our readable orange; every one is
+ * at least 5:1 on the hero ground, so any combination stays legible.
+ */
+export const heroEditor = {
+  levels: [
+    { id: "h1", label: "Heading 1", short: "H1" },
+    { id: "h2", label: "Heading 2", short: "H2" },
+    { id: "h3", label: "Heading 3", short: "H3" },
+  ],
+  inks: [
+    { id: "ink", label: "Ink", value: "#1d1e22" },
+    { id: "rust", label: "Rust", value: "#9e4606" },
+    { id: "spruce", label: "Spruce", value: "#203a3c" },
+    { id: "indigo", label: "Indigo", value: "#1f2b57" },
+  ],
+  /** Shown before anything is changed. Kept to one line on a phone. */
+  idle: "Try it. On your book, every call is yours.",
+  /** After the one-time demo: the hand-over. Short enough for one line on a phone. */
+  invite: "Your turn: style this headline",
+  /** Appended to the description once something is changed. */
+  coda: "your book, your call.",
+  timeZone: "America/Chicago",
+} as const;
+
+export type HeroLevel = (typeof heroEditor.levels)[number]["id"];
+export type HeroInk = (typeof heroEditor.inks)[number]["id"];
+
+export const heroProof = [
+  { title: "Every right, every royalty", body: "Yours. We publish under your name, not ours." },
+  { title: "Read before quoted", body: "We price the book in front of us, not a package tier." },
+  { title: "Nothing bundled", body: "Take one service or all six. No padding." },
+] as const;
+
+/**
+ * The five stages printed on the book's leaves in the loader animation.
+ *
+ * `note` is the RECTO (the right-hand page you read before the turn) and
+ * `detail` is the VERSO (the back of that same leaf, which lands on the left
+ * after it turns). They must stay DIFFERENT: the verso used to repeat the
+ * recto word for word, so every stage was read twice in a row and the turn
+ * looked like the same page flipping twice.
+ */
 export const stages = [
-  { word: "Write", note: "Outlining, coaching and ghostwriting that keeps your voice." },
-  { word: "Edit", note: "Developmental, line, copyediting and proofreading." },
-  { word: "Design", note: "Covers and interiors set for print and screen." },
-  { word: "Illustrate", note: "Characters, scenes and artwork for younger readers." },
-  { word: "Publish", note: "Formats, metadata and distribution setup." },
+  {
+    word: "Write",
+    note: "Outlining, coaching and ghostwriting that keeps your voice.",
+    detail: "You approve the outline before a word is drafted, then every chapter as it lands.",
+  },
+  {
+    word: "Edit",
+    note: "Developmental, line, copyediting and proofreading.",
+    detail: "Four levels, applied to what the manuscript actually needs. You decide what stays.",
+  },
+  {
+    word: "Design",
+    note: "Covers and interiors set for print and screen.",
+    detail: "Cover, interior and the print-ready files, proofed on the stock the book will use.",
+  },
+  {
+    word: "Illustrate",
+    note: "Characters, scenes and artwork for younger readers.",
+    detail: "Character sheets first, then roughs, then the finished spreads.",
+  },
+  {
+    word: "Publish",
+    note: "Formats, metadata and distribution setup.",
+    detail: "An ISBN in your name, metadata written for the shelf, and distribution checked.",
+  },
 ] as const;
 
 /* -------------------------------------------------------------------------- */
@@ -377,47 +483,96 @@ export const workFilters = [
   "Fantasy and romance",
 ] as const;
 
+/**
+ * The real portfolio: 28 published covers. Titles, categories and author
+ * credits are as published; where a cover carries no visible author credit,
+ * the alt text describes the cover without inventing one.
+ */
 export const covers = [
-  { title: "The Salt Road", meta: "Fiction · Hardcover, eBook", cat: "Fiction",
-    image: "/images/covers/the-salt-road.webp",
-    alt: "Fiction novel book cover design for The Salt Road by Elena Varga" },
-  { title: "Long Way from Kerrville", meta: "Memoir · Paperback", cat: "Memoir",
-    image: "/images/covers/long-way-from-kerrville.webp",
-    alt: "Memoir book cover design for Long Way from Kerrville by R. Alvarez" },
-  { title: "The Quiet Ledger", meta: "Business · Hardcover", cat: "Business",
-    image: "/images/covers/the-quiet-ledger.webp",
-    alt: "Business book cover design for The Quiet Ledger by D. Marchetti" },
-  {
-    title: "Mabel and the Nine Moons",
-    meta: "Children’s · Full colour",
-    cat: "Children’s",
-    image: "/images/covers/mabel-and-the-nine-moons.webp",
-    alt: "Children's book cover design for Mabel and the Nine Moons by J. Okafor",
-  },
-  {
-    title: "Ashes of the Ninth Court",
-    meta: "Fantasy · Paperback, eBook",
-    cat: "Fantasy and romance",
-    image: "/images/covers/ashes-of-the-ninth-court.webp",
-    alt: "Fantasy novel book cover design for Ashes of the Ninth Court by Owen Hartley",
-  },
-  {
-    title: "Still Waters, Still Here",
-    meta: "Faith · Paperback",
-    cat: "Faith and inspiration",
-    image: "/images/covers/still-waters-still-here.webp",
-    alt: "Faith and inspirational book cover design for Still Waters, Still Here by S. Bell",
-  },
-  {
-    title: "Forty Weeks of Small Repairs",
-    meta: "Nonfiction · Paperback",
-    cat: "Nonfiction",
-    image: "/images/covers/forty-weeks-of-small-repairs.webp",
-    alt: "Nonfiction book cover design for Forty Weeks of Small Repairs by Priya Menon",
-  },
-  { title: "What the River Kept", meta: "Fiction · Hardcover", cat: "Fiction",
-    image: "/images/covers/what-the-river-kept.webp",
-    alt: "Fiction novel book cover design for What the River Kept by T. Nakamura" },
+  { title: "And So It Is...", meta: "Memoir · Cover design", cat: "Memoir",
+    image: "/images/covers/and-so-it-is.webp",
+    alt: "Memoir book cover design for And So It Is... by Jamie Lynn Sigler" },
+  { title: "The Madness behind the Mask", meta: "Nonfiction · Cover design", cat: "Nonfiction",
+    image: "/images/covers/the-madness-behind-the-mask.webp",
+    alt: "Nonfiction book cover design for The Madness behind the Mask by Gwyn Devereaux" },
+  { title: "The Madness behind the Gavel-Justice", meta: "Nonfiction · Cover design", cat: "Nonfiction",
+    image: "/images/covers/the-madness-behind-the-gavel-justice.webp",
+    alt: "Nonfiction book cover design for The Madness behind the Gavel-Justice by Gwyn Devereaux" },
+  { title: "We All Have a Story! Here's Mine.", meta: "Memoir · Cover design", cat: "Memoir",
+    image: "/images/covers/we-all-have-a-story-heres-mine.webp",
+    alt: "Memoir book cover design for We All Have a Story! Here's Mine. by Maurice Chandler" },
+  { title: "Dispensing Pills Popping Pills", meta: "Memoir · Cover design", cat: "Memoir",
+    image: "/images/covers/dispensing-pills-popping-pills.webp",
+    alt: "Memoir book cover design for Dispensing Pills Popping Pills by Brooke Forsythe, RN" },
+  { title: "Becoming Glitch", meta: "Fantasy · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/becoming-glitch.webp",
+    alt: "Fantasy novel book cover design for Becoming Glitch by Daniel Sayre" },
+  { title: "Voodoo War", meta: "Fantasy · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/voodoo-war.webp",
+    alt: "Fantasy novel book cover design for Voodoo War by Nate Stack" },
+  { title: "The Strange Case of Guaritori Diolco", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/the-strange-case-of-guaritori-diolco.webp",
+    alt: "Fiction novel book cover design for The Strange Case of Guaritori Diolco by Bill Hiatt" },
+  { title: "Embers", meta: "Fantasy · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/embers.webp",
+    alt: "Fantasy novel book cover design for Embers by C.J. Shaffer" },
+  { title: "The Assassin's Betrayal", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/the-assassins-betrayal.webp",
+    alt: "Fiction novel book cover design for The Assassin's Betrayal by Auston King" },
+  { title: "The Assassin's Shadow", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/the-assassins-shadow.webp",
+    alt: "Fiction novel book cover design for The Assassin's Shadow by Auston King" },
+  { title: "Broken Soul", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/broken-soul.webp",
+    alt: "Fiction novel book cover design for Broken Soul by Kevin Wallace" },
+  { title: "The Nanny", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/the-nanny.webp",
+    alt: "Fiction novel book cover design for The Nanny by A.J. Rivers" },
+  { title: "Turn to Home", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/turn-to-home.webp",
+    alt: "Fiction novel book cover design for Turn to Home by Kate Bold" },
+  { title: "Facts Are Stubborn Things", meta: "Nonfiction · Cover design", cat: "Nonfiction",
+    image: "/images/covers/facts-are-stubborn-things.webp",
+    alt: "Nonfiction book cover design for Facts Are Stubborn Things by Richard A. Danzig" },
+  { title: "Missing", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/missing.webp",
+    alt: "Fiction novel book cover design for Missing by Dianne Scott" },
+  { title: "The Brangus Rebellion", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/the-brangus-rebellion.webp",
+    alt: "Fiction novel book cover design for The Brangus Rebellion by R.R. Corvi" },
+  { title: "Dark Island", meta: "Fiction · Cover design", cat: "Fiction",
+    image: "/images/covers/dark-island.webp",
+    alt: "Fiction novel book cover design for Dark Island by Matt James" },
+  { title: "A Guide to Getting Lost", meta: "Fantasy and romance · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/a-guide-to-getting-lost.webp",
+    alt: "Romance novel book cover design for A Guide to Getting Lost by Ashley Witkowski" },
+  { title: "The Rule of Three", meta: "Fantasy and romance · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/the-rule-of-three.webp",
+    alt: "Fantasy romance book cover design for The Rule of Three by Sara Cate" },
+  { title: "The Quiescent Hunter", meta: "Fantasy and romance · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/the-quiescent-hunter.webp",
+    alt: "Fantasy romance book cover design for The Quiescent Hunter by Luna Larkin" },
+  { title: "Forbidden Fate", meta: "Fantasy and romance · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/forbidden-fate.webp",
+    alt: "Fantasy romance book cover design for Forbidden Fate by Jezebel Thorne" },
+  { title: "Craving His Captive", meta: "Fantasy and romance · Cover design", cat: "Fantasy and romance",
+    image: "/images/covers/craving-his-captive.webp",
+    alt: "Romance novel book cover design for Craving His Captive by Jezebel Thorne" },
+  { title: "Roy Rooster: The Brave Little Soul", meta: "Children’s · Cover design", cat: "Children’s",
+    image: "/images/covers/roy-rooster-the-brave-little-soul.webp",
+    alt: "Children's book cover design for Roy Rooster: The Brave Little Soul by Jess Phillips" },
+  { title: "Great Grandma Loves Me!", meta: "Children’s · Cover design", cat: "Children’s",
+    image: "/images/covers/great-grandma-loves-me.webp",
+    alt: "Children's book cover design for Great Grandma Loves Me!" },
+  { title: "Who Likes to Brush His Teeth?", meta: "Children’s · Cover design", cat: "Children’s",
+    image: "/images/covers/who-likes-to-brush-his-teeth.webp",
+    alt: "Children's book cover design for Who Likes to Brush His Teeth? by Libi Ashkenazy Nosov" },
+  { title: "Lucy and the Enchanted Forest", meta: "Children’s · Cover design", cat: "Children’s",
+    image: "/images/covers/lucy-and-the-enchanted-forest.webp",
+    alt: "Children's book cover design for Lucy and the Enchanted Forest by Z.P. Anthony Williams" },
+  { title: "Think Big Live", meta: "Children’s · Cover design", cat: "Children’s",
+    image: "/images/covers/think-big-live.webp",
+    alt: "Children's book cover design for Think Big Live by Kat Kronenberg" },
 ] as const;
 
 /* -------------------------------------------------------------------------- */
@@ -504,38 +659,9 @@ export const testimonials = [
 /* Articles                                                                    */
 /* -------------------------------------------------------------------------- */
 
-export const articles = [
-  {
-    tag: "Getting started",
-    title: "How to Publish a Book for the First Time",
-    body: "The decisions that come before the writing: format, budget, timeline and the help you actually need.",
-  },
-  {
-    tag: "Rights and ownership",
-    title: "Do You Keep the Rights to Your Book When You Hire a Publishing Company?",
-    body: "What “you keep every right and every royalty” means in practice, and the questions to ask before you sign any publishing agreement.",
-  },
-  {
-    tag: "Editing",
-    title: "What Type of Editing Does Your Manuscript Need?",
-    body: "Developmental, line, copyediting and proofreading: what each one changes, and the order they belong in.",
-  },
-  {
-    tag: "Getting started",
-    title: "Self-Publishing vs. Traditional Publishing: What Actually Changes",
-    body: "Who owns the rights, who is paid first, how long each route takes and how to choose the one that fits your book.",
-  },
-  {
-    tag: "Production",
-    title: "Paperback vs. Hardcover: Which Should You Choose?",
-    body: "Print costs, reader expectations by genre, and when producing both formats is worth it.",
-  },
-  {
-    tag: "Pricing",
-    title: "How Much Does It Cost to Publish a Book?",
-    body: "What moves a quote up or down: length, condition, illustration and format, explained plainly.",
-  },
-] as const;
+/* Full article content moved to lib/articles.ts (it outgrew a teaser list —
+   each entry is now a complete guide with its own page at
+   /author-guide/[slug]). ArticlesList reads from there. */
 
 /* -------------------------------------------------------------------------- */
 /* Inner pages                                                                 */
@@ -612,7 +738,7 @@ export const aboutStory = {
   heading: "Publishing without the fine print.",
   paragraphs: [
     "Too many authors pay to publish and find out afterwards that the contract kept their rights, the edit was a spellcheck and the cover came from a template. Publish Your Book exists to do the opposite.",
-    "We are a small team of editors, designers and publishing specialists in Austin, Texas. Every book is handled by people who have read it, and every decision is explained before it is made.",
+    "We are a small team of editors, designers and publishing specialists in Chicago, Illinois. Every book is handled by people who have read it, and every decision is explained before it is made.",
     "You own the finished files, the ISBN and every royalty. If you want to take the book elsewhere tomorrow, you can, and we will hand over what you need to do it.",
   ],
 } as const;

@@ -3,13 +3,15 @@
 ## What this is
 
 The marketing website for **Publish Your Book**, an independent book-publishing
-services company based in Austin, Texas. It takes an author from a draft or a
+services company based in Chicago, Illinois. It takes an author from a draft or a
 finished manuscript to a published, distributed book.
 
 - Tagline: *From finished manuscript to published author.*
 - Positioning: *Your book deserves better than a template.* Edited, designed and
   distributed properly — **the author keeps every right and every royalty.**
-- Contact: `hello@publishyourbook.com`
+- Contact: `info@publishyourbook.us` · `site.address` in `site.ts` (3525 W
+  Peterson Avenue, Suite 400, Chicago, IL 60659) — used on `/terms`, `/privacy`
+  and in the business JSON-LD in `schema.ts`.
 
 ## Who it is for
 

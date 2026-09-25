@@ -4,38 +4,187 @@ How each moving part works, and the constraints that shaped it. Read the relevan
 section before changing any of these — most of them were rebuilt at least once
 after a user-reported bug.
 
-## 1. Book loader — `components/loader/BookLoader.tsx`
+## 1. Homepage intro — `components/loader/BookLoader.tsx`, `lib/intro.ts`
 
-A full-screen intro over the page: a closed book grows, opens, turns its pages,
-closes, then the loader slides up and away.
+A short **video** of the book: it rises and settles, opens, turns its five pages,
+closes and turns over — then the homepage fades in. ~3.5s. **Once per visit, only
+when a visit lands on the homepage**, and any input skips it.
 
-**It advances one step per scroll gesture.** Not scrubbed. This is a hard
-requirement from user complaints ("scrolls too much" / "doesn't scroll
-properly") — both were caused by the old delta-accumulating scrub.
+**Why a video.** The same book used to run live in WebGL. Even after the fixes
+below it needed ~2.8s of downloading and GPU work before it could move on a fast
+desktop, missed its deadline on the dev server every time, and on slower phones —
+so visitors often saw a closed book lift away without opening. The video is
+rendered from that exact scene, frame by frame, so it looks identical; it starts
+almost at once on every device; and the homepage ships no 3D code at all.
 
-- Steps (7 gestures): open → leaf 1 → 2 → 3 → 4 → 5 → close-and-settle → exit.
-- Phase durations in `D`; stop times are recorded while building the timeline.
-- Leaves turn **sequentially, never overlapping** — an overlapping riffle cannot
-  be stopped between pages.
-- Every inner tween is `ease: "none"`; the step tween (`STEP_DUR` 0.85s,
-  `power2.inOut`) supplies the easing, so nothing is eased twice.
-- **Wheel**: the first event of a burst steps; events within `GESTURE_GAP`
-  (220ms) of quiet are inertia and are swallowed — including while animating.
-- **Touch**: one step per finger-down once travel exceeds `SWIPE_PX` (36px).
-- **Keyboard**: Space/PageDown/ArrowDown/Enter forward, ArrowUp/PageUp back,
-  **Escape exits**. A visible **Skip** button is in the tab order.
-- Plays on every page load (no sessionStorage gate — that was removed on request).
-- Reduced motion: loader is skipped entirely.
+| Rule | How |
+|---|---|
+| **Instant** | Frame 0 is a still in the server HTML (`<picture>`, a landscape and a portrait cut), so the book is there at first paint. The `<video>` is in the server HTML too (`INTRO_VIDEO_HTML`, `preload="none"`, sources with media queries so only the fitting cut downloads), and the guard starts it at DOMContentLoaded — it does not wait for the page's JavaScript. |
+| **Short** | Plays by itself, then fades (700ms) into the page. The bar under it runs with the video. |
+| **Skippable** | Any wheel, touch, pointer-down or key (bar bare modifiers) fades it in 350ms — including input from before the JavaScript arrived (`INTRO_EARLY_SKIP`) and Tab, which then lands on the page's "Skip to content" link (the intro sits after it in the layout for exactly this). A visible **Skip intro** button remains. |
+| **Bounded** | Not playing 500ms after it could have: a small loading ring. Not playing by 2s, stalled for 1.5s, or autoplay refused (iOS Low Power Mode): it fades away. It never holds anyone. |
+| **Seen** | A homepage opened in a background tab waits — the play, the clock and the once-per-session flag are all spent only when the tab is looked at. |
+| **Once, on landing** | `sessionStorage` (`pyb:intro-seen`); `?intro` in the URL replays it for review. Only when the visit lands on `/`: following a link to Home never plays it. The guard is an inline script in the root layout's `<head>` (once per document — React never runs a script it renders on the client, so it cannot live in a page); it adds `intro-off` to `<html>` for a repeat visit, a non-home landing, reduced motion or Save-Data, and CSS hides `[data-intro]` on it — no flash, no video download. `<html>` carries `suppressHydrationWarning` for that class. |
+| **On top** | Mounted from the root layout, after the skip link, and rendered only on `/`. Inside the page it sat in `#page-content` — its own stacking context at z-index 1 — and the header and dock drew over it. |
 
-Book physics (`Book.tsx`): a stack — front cover, 5 leaves, back board — all on the
-right half, hinged on the left edge, separated by `LIFT` on Z. **The back board
-never flips.** On close, the cover and all leaves return together as one slab while
-the whole book turns over 180°, landing back-cover-up. Flipping the back board
-reads as a seventh page turn; this was reported as a bug and must not return.
+Two traps met on the way:
 
-Uses a plain `useEffect`, **not** `useGSAP` — useGSAP's context revert (including
-StrictMode double-invoke) killed the in-flight timeline. Guard clause at the top
-prevents Fast Refresh crashes once the loader has unmounted.
+- **React does not render the `muted` attribute on `<video>`**, and iOS will not
+  autoplay without it — hence the raw HTML string.
+- **Nothing may touch the video's attributes before hydration.** The guard set
+  `preload` and React reported a hydration mismatch; it now only calls `play()`.
+
+### Re-rendering the video — `app/dev/intro-studio`, `scripts/render-intro.mjs`
+
+The choreography lives in `INTRO_TIMELINE` (`lib/intro.ts`): enter 0.7s, hold
+0.15s, play 2.4s, rest 0.25s. To change the book, its cover, the entrance or the
+timing, edit the scene or the timeline, then:
+
+```
+npm run dev
+node scripts/render-intro.mjs
+```
+
+The script opens the studio page (development only — a 404 in production) in
+headless Chrome at 1920×1080 and 1080×1920, renders every frame at 60fps by
+setting the scene exactly, encodes in the browser (WebCodecs via `mediabunny`,
+a dev dependency), and writes `public/videos/intro-{landscape,portrait}.{webm,mp4}`
+(VP9 ~0.6MB, H.264 ~0.8–0.9MB) and the stills `public/images/intro/intro-*.webp`.
+No ffmpeg needed. **Check the fonts first**: if the dev server failed to download
+the Google fonts when it started, the cover renders in a fallback face — restart it.
+
+### Speed fixes to the 3D book (still in the scene)
+
+1. **One shader program for every sheet** (`customProgramCacheKey` `"book-sheet"`);
+   a key per sheet compiled the same shader nine times. Per-material uniforms
+   survive sharing, so leaves still turn one at a time.
+2. **`gl.compileAsync` before the first frame.**
+3. **Textures sized to the screen** (`superSample()` in `pageTextures.ts`).
+
+**Closing is one movement.** The covers shut and the book turns over to show its
+back; the back board never flips (that read as a seventh page turn).
+
+**Recto and verso must differ.** `stages[].note` is the recto, `stages[].detail`
+the verso, and folios run 1–10 across the spread.
+
+### The WebGL book — `components/book3d/`
+
+- `pageTextures.ts` draws every face on a 2D canvas (palette from CSS variables,
+  type from the next/font families, copy from `site.ts`) in a 900×1186 layout
+  space, scaled by `superSample()`. Fonts are awaited first or the artwork bakes
+  in a fallback face.
+- `BookScene.tsx` builds the sheets **imperatively** and reaches them through a
+  ref. A scene is mutated every frame and React rightly forbids mutating values
+  created during render.
+- Each sheet is a subdivided plane hinged on the spine, bent in a **vertex
+  shader** patched into MeshStandardMaterial via `onBeforeCompile`, so the curled
+  page keeps real lighting. Both faces are one double-sided mesh; the fragment
+  shader picks front or back from `gl_FrontFacing`, mirroring the back in u.
+- The book is driven by one number, `flow`: 0 closed, 1 open, 1+n after leaf n,
+  one more to close. The intro tweens it from 0 to `stages.length + 2`.
+
+Bugs found while building it, all of which looked like "the turn is broken":
+
+1. **A solid "page block" for bulk enclosed the sheets**, hiding the right-hand
+   page. The stacked sheets give the edge its thickness; there is no block.
+2. **Turned pages kept their original depth**, behind the opened cover. Each sheet
+   carries `zRight` and `zLeft` and travels between the stacks as it turns.
+3. **The rotation swung the page away from the reader**, behind the unturned
+   stack. It arcs **towards** the reader (+z), with the bow subtracted.
+4. **The closed book slid half out of frame** at the end: the mirrored spread
+   offset counted twice. Closing returns to the offset it had at the start.
+
+Framing: the camera is pulled in until the book fills the screen. Two distances
+are computed from the canvas size — closed book and open spread — and blended as
+it opens. `MARGIN` leaves room for Skip and the bottom bar. The studio renders
+each video cut at its own aspect ratio, so the framing adapts exactly as the
+live scene did. Change the scene, then re-render the video (above).
+
+## 1b. Hero — `components/sections/Hero.tsx`
+
+Built on orionix.framer.website's hero, including its two interactions: a
+formatting bar that really restyles the headline, and a WebGL ripple under the
+pointer. Centred serif headline, covers floating around it, a soft frame inset
+8px from the screen edge, small true details in the foot corners.
+
+**It fits one screen at every size.** The frame is `100svh` (less its inset)
+and content is trimmed on short screens instead of letting the frame grow. Two
+height variants in `globals.css` drive it:
+
+| Variant | Query | What gives way |
+|---|---|---|
+| `snug` | max-height 780px | the fanned covers (below `xl`); the pitch paragraph (below `lg`) |
+| `short` | max-height 540px (phones sideways) | eyebrow; the note under the bar (still announced, `sr-only`); headline one size down |
+
+Under 360px wide the time is dropped from the foot and the level menu reads
+"H1" rather than "Heading 1", or the bar is wider than the screen. Checked at
+320×640, 390×844, 844×390, 768×1024, 1024×768, 1280×720, 1440×860 and
+1820×1000: exactly one screen, nothing clipped.
+
+### The formatting bar — `hero/EditorHeadline.tsx`, copy in `heroEditor`
+
+- Heading 1/2/3 menu, Bold / Italic / Underline toggles, an ink menu (Ink, Rust,
+  and Spruce and Indigo taken from the hero's covers). They set the headline live.
+- **Nothing below moves.** An invisible copy of the headline at its widest
+  setting (Heading 1, bold) reserves the space; the styled one is centred in it.
+- **Menus open where there is room.** Down if 208px fit below, else up, else
+  (a phone held sideways, room on neither side) as a single row of choices. The
+  frame clips overflow, so a menu hanging off it would be cut off.
+- **Layering:** the main block is `z-20`, the foot row `z-10`. Both were
+  `z-10`, and on 720px-tall screens an open menu slid under the pitch paragraph.
+- **It must look like yours to use.** It used to restyle itself on a loop and
+  read as a video — a visitor had to be told it worked. Now, in phases:
+  - *waiting* — a text cursor blinks at the end of the headline (`.hero-caret`,
+    zero-width so no word moves);
+  - *demo*, once, after the intro has gone and the bar is 60% in view: a
+    pointer (a tap dot on touch screens) glides in, the headline is "selected"
+    (`.hero-select`, the system-blue `--color-selection`, 84% of the glyph box
+    so neighbouring lines don't overlap into a dark band), the pointer clicks
+    Italic, the headline turns italic;
+  - *invite* — "Your turn: style this headline ↑" replaces the line under the
+    bar (same height), and the bar's ring breathes (`.hero-invite`);
+  - *engaged* — the first pointer-down or focus in it: all of the above stands
+    down.
+  Clicking the headline — where people try first — selects it and nudges them to
+  the bar. Reduced motion: no pointer; the invitation and a steady ring at once.
+- a11y: the `<h1>` holds the real title as screen-reader text and the drawn
+  version is `aria-hidden`. B/I/U are `aria-pressed` toggles; the menus are
+  `menuitemradio` lists (arrow keys, Home/End, Escape returns focus); the note
+  under the bar is a polite live region describing the result.
+- Playfair Display loads weight 700 for Bold (`app/layout.tsx`).
+
+### The ripple — `hero/RippleField.tsx`
+
+- The same technique as orionix's Framer "Ripple" shader. A height field is run
+  through the 2D wave equation on a half-float texture, ping-ponged each frame.
+  Pointer movement stamps into it, and pressing strengthens the stamp. Each click
+  also launches an analytic expanding ring (up to 8). A small per-channel spread
+  gives a colour fringe.
+- **What ripples is only a faint typeset spread** (two columns of the process copy
+  in 2.2% ink, thinned behind the headline), drawn once into a 2D canvas. **The
+  covers are not in it**: they stay ordinary DOM above the canvas. An earlier
+  version painted the covers into the surface at orionix's full strength; it was
+  too much. Keep it felt, not seen.
+- Runs only with a fine hover pointer, without reduced motion, and where WebGL2 +
+  `EXT_color_buffer_float` exist. Otherwise it renders nothing. The loop sleeps
+  off screen, in a hidden tab, and 4s after the last input.
+- The in-app browser pane suspends rAF, so it cannot show this moving. To check it,
+  drive headless Chrome over CDP with `--use-angle=swiftshader` and dispatch
+  mouse events.
+
+### Covers and foot
+
+- **Covers float in the margins** (`hero/FloatingCovers.tsx`) and drift against
+  the pointer at their own depth. `hero/ParallaxFrame.tsx` writes `--mx`/`--my`
+  onto the frame, with no React state; touch and reduced motion leave them at 0.
+  Scattered from `xl` only; below that, a fanned hand of three sits under the
+  buttons (unless `snug`). Covers load with `priority`.
+- The foot row: Chicago time (`hero/StudioClock.tsx`, set after mount), the
+  pitch, the email.
+
+The previous hero (the shelf of three `Book3D` covers beside the type) is kept
+as `sections/HeroShelf.tsx`. To go back, import `HeroShelf as Hero` in
+`app/page.tsx`.
 
 ## 2. Navigation — `components/layout/SiteHeader.tsx`
 
