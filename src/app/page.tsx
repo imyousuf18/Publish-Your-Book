@@ -20,7 +20,7 @@ export default function HomePage() {
       <Services />
       <Process />
       <GenresList />
-      <Work />
+      <Work preview />
       <Cases />
       <TestimonialFeature />
       <ArticlesList articles={homeArticles} viewAllHref="/author-guide" />

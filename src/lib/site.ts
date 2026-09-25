@@ -140,6 +140,17 @@ export const heroShelf = [
 ] as const;
 
 /**
+ * The homepage's short "a few, then go see the rest" preview of the Work
+ * section (see `Work`'s `preview` prop) — different three from `heroShelf`
+ * so the same covers don't repeat twice on one page.
+ */
+export const homeCovers = [
+  "And So It Is...",
+  "The Rule of Three",
+  "Roy Rooster: The Brave Little Soul",
+] as const;
+
+/**
  * What the hero argues once the headline has landed.
  *
  * This replaced a rail of the five stages. Those words are printed on the

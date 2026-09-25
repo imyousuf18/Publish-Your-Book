@@ -224,7 +224,7 @@ export const articles: Article[] = [
       "The right choice depends on your book's goals, not on which route is more prestigious.",
     ],
     related: { service: "book-publishing", label: "See publishing and distribution" },
-    featuredHome: true,
+    featuredHome: false,
   },
 
   {
@@ -456,7 +456,7 @@ export const articles: Article[] = [
       "No legitimate publisher can honestly guarantee sales or bestseller status.",
     ],
     related: { path: "/about", label: "Read how we work" },
-    featuredHome: true,
+    featuredHome: false,
   },
 
   {

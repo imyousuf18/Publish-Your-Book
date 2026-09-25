@@ -30,10 +30,10 @@ import {
  *              starts it as soon as the HTML is parsed — it does not wait for
  *              this component (on a slow first load, seconds later).
  *   Short      Plays by itself, then fades into the page. Nothing to learn.
- *   Skippable  Any wheel, touch, click or key — or Skip — fades out at once,
- *              even input from before the JavaScript arrived (the guard
- *              records it). Tab too: the page's "Skip to content" link is the
- *              first stop and must not sit hidden under the intro.
+ *   Skippable  Any wheel, touch, click or key fades it out at once, even
+ *              input from before the JavaScript arrived (the guard records
+ *              it) — no visible Skip button, the intro is short enough not to
+ *              need one, but nothing about it can trap a visitor.
  *   Bounded    Not playing LOADING_SIGN_MS after it could have? A small
  *              loading sign appears. Not playing by DEADLINE_MS? It fades
  *              away. Stalls mid-play for STALL_MS? Same. Autoplay refused
@@ -227,18 +227,6 @@ export function BookLoader() {
         className="pointer-events-none absolute bottom-24 left-1/2 -translate-x-1/2 opacity-0 transition-opacity duration-300 lg:bottom-28"
       >
         <span className="block size-6 animate-spin rounded-full border-2 border-inverse-ink/15 border-t-accent-tint" />
-      </div>
-
-      {/* Skip is always there, for pointer and screen-reader users: an intro
-          nobody can leave is a trap. Any other input leaves too. */}
-      <div className="absolute right-6 top-6 lg:right-12 lg:top-10">
-        <button
-          type="button"
-          onClick={() => leave()}
-          className="inline-flex min-h-11 items-center rounded-pill border border-inverse-ink/25 px-4 text-eyebrow font-semibold uppercase text-inverse-ink/70 transition-colors duration-200 hover:border-inverse-ink hover:text-inverse-ink"
-        >
-          Skip intro
-        </button>
       </div>
 
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 p-8 lg:p-12">

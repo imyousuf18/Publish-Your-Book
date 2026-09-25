@@ -86,6 +86,12 @@ these were verified by layout and logic only:
 
 ## Done (recent)
 
+Homepage no longer shows the whole site: `Work` takes a `preview` prop (three
+covers from `homeCovers` in `site.ts`, no filter row, a "See all our work"
+link to `/work`) instead of the full 28-book grid; the Author Guide's homepage
+list trimmed from five `featuredHome` articles to three. The intro's visible
+**Skip intro** button removed — any wheel, touch, click or key still dismisses
+it immediately, so nothing is trapped, it's just no longer an on-screen button ·
 Contact email changed sitewide to `info@publishyourbook.us` (was
 `hello@publishyourbook.com`) — single source, `site.email` in `site.ts` ·
 Real portfolio: the 8 placeholder covers replaced with the 28 real books from
@@ -100,7 +106,7 @@ case studies) ·
 Ten full Author Guide articles (`articles.ts`), each with its own page at
 `/author-guide/[slug]` — intro, sections, key takeaways, a related service or
 page link, Article/Breadcrumb JSON-LD; `ArticlesList` now links every row to a
-real page instead of `/#articles`; homepage shows a five-article
+real page instead of `/#articles`; homepage shows a three-article
 `featuredHome` subset, `/author-guide` shows all ten; both in the sitemap ·
 Intro rebuilt as a pre-rendered video (studio + render script, landscape/portrait cuts, starts before hydration, fades into the page), mounted above the header; hero toolbar made obviously interactive (one-time pointer demo, text cursor, selection, "Your turn" invitation, breathing ring) · Homepage intro replaces the scroll-driven loader: plays itself once per visit, homepage only, any input skips, 3.2s deadline; book on screen at first paint (was ~9.5s) — one shared shader program instead of nine, async compile, screen-sized page textures, three.js fetched early · Terms of Service and Privacy Policy rewritten with real sections (scope, payment,
 refunds, ownership, data handling), modeled on a sister site; business location
